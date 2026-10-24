@@ -82,15 +82,26 @@ function load(){
  }catch(e){state=defaultState();state.lastPlayedAt=now();save()}
 }
 function processOffline(seconds){
- if(seconds<=60)return;
- const mins=Math.floor(seconds/60), bonfire=state.facilities.find(f=>f.id==='bonfire').level, farm=state.facilities.find(f=>f.id==='farm').level, observatory=state.facilities.find(f=>f.id==='observatory').level;
- state.wood+=Math.floor(seconds*.05*bonfire);
- state.food+=Math.floor(seconds/120* farm);
- state.starCrystals+=Math.floor(seconds/3600*observatory);state.crystal=state.starCrystals;
- const count=Math.floor(seconds/1800);
+ const elapsed=Math.max(0,Math.min(8*60*60,Math.floor(Number(seconds)||0)));
+ if(elapsed<=0)return;
+ const mins=Math.floor(elapsed/60);
+ const levels={
+  bonfire:state.facilities.find(f=>f.id==='bonfire')?.level||0,
+  farm:state.facilities.find(f=>f.id==='farm')?.level||0,
+  observatory:state.facilities.find(f=>f.id==='observatory')?.level||0
+ };
+ // 設計書の「生産速度 × 施設レベル × 経過秒数」に合わせる（現在の生産速度は維持）。
+ const productionRate={woodPerSecond:0.05,foodPerSecond:1/120,starCrystalsPerSecond:1/3600};
+ state.wood+=Math.floor(productionRate.woodPerSecond*levels.bonfire*elapsed);
+ state.food+=Math.floor(productionRate.foodPerSecond*levels.farm*elapsed);
+ state.starCrystals+=Math.floor(productionRate.starCrystalsPerSecond*levels.observatory*elapsed);
+ state.crystal=state.starCrystals;
+ const count=Math.floor(elapsed/1800);
  for(let i=0;i<count;i++){const pool=eventTemplates.filter(e=>state.companions.some(c=>c.id===e[0]&&c.unlocked));if(pool.length){const ev=pool[(state.events.length+i)%pool.length];addEvent(ev[2],'留守中の出来事')}}
- if(count===0)addEvent('不在だった'+mins+'分の間、仲間たちは基地を見守っていました。','留守中の出来事');
- toast='おかえり。留守のあいだの暮らしが日誌に残ったよ。';toastUntil=now()+5000;
+ if(elapsed>60){
+  if(count===0)addEvent('不在だった'+mins+'分の間、仲間たちは基地を見守っていました。','留守中の出来事');
+  toast='おかえり。留守のあいだの暮らしが日誌に残ったよ。';toastUntil=now()+5000;
+ }
 }
 function checkStory(){
  if(state.progressStep===0){dialog={title:'星の丘へ',lines:['小さな不思議な生き物「ピコ」が現れた。','ピコ：「ココハ『ホシノオカ』。タキビ・ツケル・ト、ナカマ・アツマル・ピ！」','焚き火を調べて、最初の灯りを取り戻そう。']};state.progressStep=1;return}
