@@ -48,7 +48,7 @@ const characterDefaults=()=>[
 ];
 const defaultState=()=>({
  mode:'base',wood:10,food:0,metal:0,starCrystals:0,herbs:0,crystal:0,level:0,lamps:false,flowers:false,bridge:false,
- lastSeen:now(),createdAt:now(),day:1,progressStep:0,explore:null,currentArea:'forest_1',clearedAreas:[],
+ lastSeen:now(),createdAt:now(),day:1,progressStep:0,explore:null,currentArea:'forest_1',clearedAreas:[],playerX:72,
  events:[],memories:[],talkedToday:false,photos:[],letters:[],recipes:[],
  companions:characterDefaults(),facilities:facilityDefaults()
 });
@@ -67,13 +67,14 @@ function normalizeState(s){
  state.flowers=!!s.flowers;state.bridge=!!s.bridge;
  return state;
 }
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch(e){toast='セーブできませんでした。端末の空き容量を確認してください。';toastUntil=now()+3500}}
+function save(){try{state.playerX=Number.isFinite(player.x)?player.x:(Number(state.playerX)||72);localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch(e){toast='セーブできませんでした。端末の空き容量を確認してください。';toastUntil=now()+3500}}
 function load(){
  try{
   const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem('starHillSurvivors.save.v1');
   if(raw){
    const s=JSON.parse(raw);
    normalizeState(s);
+   player.x=Math.max(8,Math.min(W-40,Number(state.playerX)||72));
    const previousTime=Number(s.lastPlayedAt||s.lastSeen||s.createdAt||now());
    const elapsed=Math.max(0,Math.min(8*60*60,Math.floor((now()-previousTime)/1000)));
    processOffline(elapsed);
@@ -133,7 +134,9 @@ function addEvent(text,type='暮らしの記録'){state.events.unshift({text,typ
 function remember(text){if(!state.memories.includes(text))state.memories.unshift(text);state.memories=state.memories.slice(0,30)}
 function resize(){const dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.floor(innerWidth*dpr);canvas.height=Math.floor(innerHeight*dpr);scale=Math.min(canvas.width/W,canvas.height/H);ox=(canvas.width-W*scale)/2;oy=(canvas.height-H*scale)/2;ctx.imageSmoothingEnabled=false}
 addEventListener('resize',resize);resize();load();checkStory();
-addEventListener('pagehide',()=>{state.lastPlayedAt=now();state.lastSeen=state.lastPlayedAt;save()});
+addEventListener('pagehide',()=>{state.playerX=player.x;state.lastPlayedAt=now();state.lastSeen=state.lastPlayedAt;save()});
+// 同じURLを別タブや新しいリンクから開いた場合も、同一ブラウザ内の最新セーブを共有する。
+addEventListener('storage',e=>{if(e.key!==SAVE_KEY||!e.newValue)return;try{const incoming=JSON.parse(e.newValue);normalizeState(incoming);player.x=Math.max(8,Math.min(W-40,Number(state.playerX)||72));state.lastPlayedAt=Number(incoming.lastPlayedAt)||now();toast='別の画面で保存した続きに同期しました。';toastUntil=now()+2500;}catch(_){}});
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
 function text(s,x,y,size=8,color='#f4e5c4',align='left'){ctx.font=(size*1.2)+'px monospace';ctx.textAlign=align;ctx.textBaseline='top';ctx.fillStyle=color;ctx.fillText(s,x,y)}
 function panel(x,y,w,h){rect(x,y,w,h,'#171a32');rect(x,y,w,1,'#a98d8a');rect(x,y+h-1,w,1,'#5d526b');rect(x,y,1,h,'#8e7d91');rect(x+w-1,y,1,h,'#5d526b')}
