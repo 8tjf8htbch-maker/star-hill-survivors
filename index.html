@@ -143,7 +143,33 @@ function cabin(x,y,scale=1){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale)
 function wheel(x,y){ctx.strokeStyle='#ad8064';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.stroke();for(let i=0;i<8;i++){const a=i*Math.PI/4+t*.22;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a)*14,y+Math.sin(a)*14);ctx.stroke()}rect(x-3,y-3,6,6,'#d4a16d')}
 function deck(){rect(0,202,W,6,'#d2a179');rect(0,208,W,19,'#805951');rect(0,227,W,3,'#4c3e4b');for(let x=0;x<W;x+=24){rect(x,203,1,22,'#513d49');rect(x+3,212,2,1,'#e4b382')}for(let x=14;x<W;x+=80){rect(x,228,4,32,'#493b49');rect(x-2,227,8,3,'#b98b68')}for(let x=50;x<W;x+=145)lamp(x,196)}
 function character(x,y,color='#82b5c6',walking=false,dir=1){rect(x+5,y+29,22,3,'#11172b');if(spriteReady&&sprite.naturalWidth>=32&&sprite.naturalHeight>=32){let f=walking?Math.floor(t*FRAME_RATE)%(Math.min(FRAME_COUNT,Math.floor(sprite.naturalWidth/32))):0;ctx.save();if(dir<0){ctx.translate(x+32,y);ctx.scale(-1,1);ctx.drawImage(sprite,f*32,0,32,32,0,0,32,32)}else ctx.drawImage(sprite,f*32,0,32,32,x,y,32,32);ctx.restore();return}rect(x+10,y+3,12,3,'#30243e');rect(x+7,y+6,18,8,'#30243e');rect(x+9,y+8,14,7,'#efbd91');rect(x+7,y+5,18,4,'#4c3650');rect(x+8,y+13,16,3,'#b47a68');rect(x+8,y+16,16,10,color);let step=walking?Math.sin(t*FRAME_RATE*Math.PI)*2:0;rect(x+5,y+17+step,4,8,color);rect(x+23,y+17-step,4,8,color);rect(x+10,y+26+step,5,Math.max(2,5-step),'#3d334b');rect(x+18,y+26-step,5,Math.max(2,5+step),'#3d334b');rect(x+11,y+9,2,2,'#29243a');rect(x+20,y+9,2,2,'#29243a')}
-function drawBase(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);trees();water();cabin(34,133,.8);cabin(365,141,.7);wheel(390,172);deck();if(state.lamps){for(let i=0;i<4;i++)lamp(105+i*82,187)}if(state.flowers){for(let i=0;i<9;i++){let x=28+i*49;rect(x,198,2,4,'#5d9b70');rect(x-2,197,3,3,i%2?'#efb2d0':'#e9d58a')}}if(state.bridge){rect(0,199,W,3,'#d6b58a');for(let x=10;x<W;x+=35)rect(x,195,3,5,'#e5c39b')}
+function drawFacilityDecorations(){
+ const level=id=>state.facilities.find(f=>f.id===id)?.level||0;
+ // 焚き火：建設すると拠点中央に炎と石囲いが現れる
+ if(level('bonfire')>0){
+  rect(226,187,28,10,'#5a4650');rect(230,184,5,6,'#9a8a88');rect(245,184,5,6,'#9a8a88');
+  rect(235,181,8,9,'#e97c43');rect(237,177,4,8,'#ffd16b');rect(238,180,2,5,'#fff0a2');
+  text('焚き火 Lv.'+level('bonfire'),240,199,6,'#fff0c9','center');
+ }
+ // 農園：作物の列が施設レベルに応じて増える
+ if(level('farm')>0){
+  rect(20,177,57,19,'#58464a');rect(22,179,53,15,'#70534c');
+  for(let row=0;row<Math.min(3,level('farm')+1);row++){
+   for(let col=0;col<5;col++){const x=26+col*9,y=181+row*4;rect(x,y,2,3,'#5b9b68');rect(x+2,y-1,2,3,(row+col)%2?'#9fca79':'#d7d88b')}
+  }
+  text('農園 Lv.'+level('farm'),48,198,6,'#fff0c9','center');
+ }
+ // 製材所：木材の山と作業台を表示
+ if(level('lumber_mill')>0){
+  rect(397,180,42,14,'#604653');rect(400,177,35,4,'#b9825d');
+  for(let i=0;i<Math.min(4,level('lumber_mill')+1);i++){rect(401+i*8,172,7,5,'#b9825d');rect(402+i*8,173,5,3,'#e0b17a')}
+  rect(409,184,18,8,'#8c624d');rect(411,186,14,2,'#d5a16e');
+  text('製材所 Lv.'+level('lumber_mill'),418,198,6,'#fff0c9','center');
+ }
+ // 小屋：未建設時は出さず、建設後に自分の居住小屋として現れる
+ if(level('hut')>0){cabin(174,132,0.72);text('小屋 Lv.'+level('hut'),203,171,6,'#fff0c9','center')}
+}
+function drawBase(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);trees();water();cabin(34,133,.8);cabin(365,141,.7);wheel(390,172);deck();drawFacilityDecorations();if(state.lamps){for(let i=0;i<4;i++)lamp(105+i*82,187)}if(state.flowers){for(let i=0;i<9;i++){let x=28+i*49;rect(x,198,2,4,'#5d9b70');rect(x-2,197,3,3,i%2?'#efb2d0':'#e9d58a')}}if(state.bridge){rect(0,199,W,3,'#d6b58a');for(let x=10;x<W;x+=35)rect(x,195,3,5,'#e5c39b')}
  // companions wander subtly around their familiar spots
  state.companions.filter(c=>c.unlocked).forEach((c,i)=>{const x=c.x+Math.sin(t*.45+i*2)*3;character(x,170,c.color,Math.sin(t*.45+i)>0.88,1);text(c.name,x+16,162,7,'#f4e5c4','center')});
  character(player.x,170,'#b6c9da',player.walking,player.dir);
