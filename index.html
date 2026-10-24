@@ -291,13 +291,26 @@ function talk(){
   sera:['今夜は星がよく見えそう。あとで一緒に空を見ない？','星の並びは、昔の道しるべだったのかもしれないね。','この丘から見る空、少しずつ好きになってきた。','まだ誰も知らない星の記録を見つけたいんだ。']
  };
  const lines=dialogue[c.id]||[c.mood,'今日のこと、あとで日誌にも残しておこう。','この基地の灯りを見ると、帰ってきたって感じがするね。'];
- const line=lines[Math.floor(Math.random()*lines.length)];
- const oldAffinity=Math.max(1,Number(c.affinity)||1);
+ const affinityBefore=Math.max(1,Number(c.affinity)||1);
+ const linesByBond={
+  mina:['前より、この場所を自分の家みたいに思えるようになったよ。','今度、みんなの道具に目印をつけておこうかな。','帰る場所があるって、思っていたより心強いね。'],
+  joe:['みんなの好きな味を、少しずつ覚えていきたいな。','一緒に食卓を囲む時間が、僕の宝物になってきたよ。','今度は君のために、とっておきの料理を作るね。'],
+  sera:['この丘の星空を、君と見たことを記録しておきたい。','星は遠いけど、同じ空を見上げる人がいるんだね。','いつか見つけた星に、みんなの名前をつけたいな。']
+ };
+ const line=affinityBefore>=3&&linesByBond[c.id]&&Math.random()<0.55
+  ?linesByBond[c.id][Math.floor(Math.random()*linesByBond[c.id].length)]
+  :lines[Math.floor(Math.random()*lines.length)];
+ const oldAffinity=affinityBefore;
  c.affinityExp=(Number(c.affinityExp)||0)+1;
- if(c.affinityExp>=3){c.affinityExp-=3;c.affinity=oldAffinity+1;addEvent(c.name+'との絆が深まり、なかよし度が'+c.affinity+'になった。','絆の記録');remember(c.name+'と少し心が通じた日');}
+ let bondUp=false;
+ if(c.affinityExp>=3){c.affinityExp-=3;c.affinity=oldAffinity+1;bondUp=true;addEvent(c.name+'との絆が深まり、なかよし度が'+c.affinity+'になった。','絆の記録');remember(c.name+'と少し心が通じた日');}
  const affinity=Math.max(1,Number(c.affinity)||1);
- const closeness=affinity>=4?'大切な仲間':affinity>=2?'親しい仲間':'仲間';
- dialog={title:c.name+' ・ '+c.role,lines:[line,'なかよし度 '+affinity+'　（'+closeness+'）','話をするたび、少しずつ絆が深まる。']};
+ const closeness=affinity>=5?'かけがえのない親友':affinity>=3?'心を許せる親友':affinity>=2?'親しい仲間':'仲間';
+ const result=[line,'なかよし度 '+affinity+'　（'+closeness+'）'];
+ if(bondUp)result.push('✦ '+c.name+'との思い出が日誌に刻まれた。');
+ else if(affinity>=3)result.push('二人だけの思い出が、少しずつ増えていく。');
+ else result.push('何度も話すと、もっと特別な会話が聞けるかも。');
+ dialog={title:c.name+' ・ '+c.role,lines:result};
  state.talkedToday=true;addEvent(c.name+'：「'+line+'」','仲間との会話');save()
 }
 function explore(area='forest_1'){if(state.mode==='explore')return;state.currentArea=area;state.mode='explore';state.explore={area,ends:now()+25000};player.x=72;dialog=null;toast='探索へ出発した。';toastUntil=now()+2500;save()}
