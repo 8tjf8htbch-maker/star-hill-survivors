@@ -2,138 +2,62 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#17152f">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#11152d">
 <title>星明かりの水辺</title>
 <style>
-:root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#11152b;color:#f9e8bd;font-family:ui-monospace,Menlo,monospace}
-main{height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px}
-h1{font-size:clamp(15px,2.5vw,22px);margin:0;letter-spacing:.12em;text-shadow:0 0 14px #ffbc68}
-.sub{font-size:11px;color:#b9bad8;margin-top:-4px}
-#frame{width:min(100%,1100px);position:relative;border:3px solid #6f648e;box-shadow:0 0 0 3px #252447,0 0 36px #8d68b733;background:#151832}
-canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;image-rendering:pixelated;image-rendering:crisp-edges}
-#tip{font-size:12px;color:#d0cbe8;text-align:center;line-height:1.5}.controls{display:none;gap:16px;justify-content:center}.controls button{font:inherit;font-size:22px;color:#ffe7b5;background:#282849;border:2px solid #9e8fc0;border-radius:8px;width:74px;height:52px;touch-action:none}
-@media(pointer:coarse){.controls{display:flex}} 
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#11152d}body{touch-action:none}canvas{display:block;width:100vw;height:100dvh;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
 </style>
 </head>
 <body>
-<main>
-<h1>星明かりの水辺</h1><div class="sub">THE LANTERN SHORE · 夜の小さな冒険</div>
-<div id="frame"><canvas id="game" width="480" height="270" aria-label="星明かりの水辺の横スクロールゲーム"></canvas></div>
-<div id="tip">移動：← → / A D　　静かな水辺を歩いてみよう</div>
-<div class="controls"><button id="left" aria-label="左へ">◀</button><button id="right" aria-label="右へ">▶</button></div>
-</main>
+<canvas id="game" aria-label="星明かりの水辺。左右キーまたは画面下の矢印で移動"></canvas>
 <script>
 (()=>{
 'use strict';
-const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d',{alpha:false});
 ctx.imageSmoothingEnabled=false;
-const W=canvas.width,H=canvas.height;
-const SPRITE_W=32,SPRITE_H=32,FRAME_COUNT=4,FRAME_RATE=8,PLAYER_SCALE=1;
-const WORLD_WIDTH=1800,GROUND_Y=190,MOVE_SPEED=90;
-const keys={};let touchL=false,touchR=false,last=0,time=0;
-const player={x:70,y:GROUND_Y-SPRITE_H*PLAYER_SCALE,w:SPRITE_W*PLAYER_SCALE,h:SPRITE_H*PLAYER_SCALE,dir:1,walking:false,frame:0};
-let camera=0;
-const sprite=new Image();let spriteReady=false;
-sprite.onload=()=>{spriteReady=true};sprite.onerror=()=>{spriteReady=false};sprite.src='player.png';
-function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
-function rng(n){let x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x)}
-const stars=Array.from({length:95},(_,i)=>({x:rng(i+2)*WORLD_WIDTH,y:8+rng(i+92)*115,s:rng(i+202)>.82?2:1,p:rng(i+30)*6}));
+const W=480,H=270,SPRITE_W=32,SPRITE_H=32,FRAME_COUNT=4,FRAME_RATE=8,PLAYER_SCALE=1;
+const WORLD=2200,GROUND=211,SPEED=115;
+let scale=1,ox=0,oy=0,cam=0,last=0,t=0;
+const keys={left:false,right:false};
+const p={x:64,y:GROUND-SPRITE_H*PLAYER_SCALE,w:SPRITE_W*PLAYER_SCALE,h:SPRITE_H*PLAYER_SCALE,dir:1,walking:false};
+const img=new Image();let imageReady=false;img.onload=()=>imageReady=true;img.onerror=()=>imageReady=false;img.src='player.png';
+const stars=Array.from({length:115},(_,i)=>({x:Math.random()*WORLD,y:Math.random()*133,s:Math.random()>.82?2:1,phase:Math.random()*6}));
+function resize(){const dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.floor(innerWidth*dpr);canvas.height=Math.floor(innerHeight*dpr);scale=Math.min(canvas.width/W,canvas.height/H);ox=(canvas.width-W*scale)/2;oy=(canvas.height-H*scale)/2;ctx.imageSmoothingEnabled=false}
+addEventListener('resize',resize);resize();
+function r(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
 function sky(){
- let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#11152e');g.addColorStop(.48,'#29244e');g.addColorStop(.78,'#59416e');g.addColorStop(1,'#9b6274');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
- for(const s of stars){let x=Math.floor(s.x-camera*.12);if(x<0||x>W)continue;rect(x,s.y,s.s,s.s,Math.sin(time*2+s.p)>.6?'#fff0c2':'#c7c7ef')}
- // constellation
- ctx.strokeStyle='#8e9dd0';ctx.globalAlpha=.65;ctx.lineWidth=1;ctx.beginPath();[[310,35],[324,25],[339,38],[353,21],[366,29]].forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();ctx.globalAlpha=1;
- // moon
- rect(390,29,19,19,'#f6dfb1');rect(394,25,15,19,'#f6dfb1');rect(400,30,12,15,'#29244e');
+ const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#10152e');g.addColorStop(.43,'#272447');g.addColorStop(.72,'#57416b');g.addColorStop(1,'#98687b');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ stars.forEach(s=>{const x=s.x-cam*.13;if(x<0||x>W)return;r(x,s.y,s.s,s.s,Math.sin(t*2+s.phase)>.6?'#fff0bf':'#c1c9e9')});
+ // moon and constellation
+ r(386,25,20,20,'#f5e3b8');r(392,21,17,20,'#f5e3b8');r(399,26,12,15,'#292447');
+ ctx.strokeStyle='#9ba8d9';ctx.lineWidth=1;ctx.beginPath();[[302,32],[317,23],[333,36],[349,20],[365,29]].forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();
 }
-function mountains(){
- for(let layer=0;layer<3;layer++){
-  const speed=[.18,.32,.5][layer],base=[145,158,169][layer],col=['#242541','#222c43','#1e3444'][layer];
-  for(let x=-100;x<W+120;x+=100){let wx=x+Math.floor(camera*speed),h=22+rng(Math.floor(wx/100)+layer*20)*45;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,base);ctx.lineTo(x+40,base-h);ctx.lineTo(x+86,base);ctx.closePath();ctx.fill()}
- }
- // tree silhouettes
- for(let i=0;i<28;i++){let wx=i*78+12,x=wx-camera*.68;if(x<-30||x>W+30)continue;let y=151+rng(i+8)*20;rect(x+7,y,5,28,'#142c35');ctx.fillStyle='#18363c';ctx.beginPath();ctx.moveTo(x+9,y-25);ctx.lineTo(x-7,y+8);ctx.lineTo(x+25,y+8);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(x+9,y-13);ctx.lineTo(x-9,y+17);ctx.lineTo(x+27,y+17);ctx.closePath();ctx.fill()}
+function ridge(speed,base,colour,step,seed){ctx.fillStyle=colour;for(let wx=-step;wx<W+step;wx+=step){let worldX=wx+cam*speed;let h=18+Math.abs(Math.sin(worldX*.027+seed))*39;ctx.beginPath();ctx.moveTo(wx,base);ctx.lineTo(wx+step*.48,base-h);ctx.lineTo(wx+step,base);ctx.closePath();ctx.fill()}}
+function scenery(){
+ ridge(.16,164,'#24243f',65,1);ridge(.28,177,'#222b43',58,4);ridge(.46,188,'#1a3441',48,2);
+ // forest silhouettes with parallax
+ for(let i=0;i<34;i++){let x=i*62-cam*.58;if(x<-30||x>W+30)continue;let y=159+Math.sin(i*8)*9;r(x+7,y,4,30,'#142c35');ctx.fillStyle='#19373c';ctx.beginPath();ctx.moveTo(x+9,y-26);ctx.lineTo(x-7,y+8);ctx.lineTo(x+25,y+8);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(x+9,y-13);ctx.lineTo(x-9,y+18);ctx.lineTo(x+27,y+18);ctx.closePath();ctx.fill()}
 }
-function water(){
- rect(0,177,W,93,'#192f48');
- for(let y=184;y<H;y+=12){for(let x=0;x<W;x+=1){let wx=x+camera*.42;if(Math.sin(wx*.11+y*.3+time*1.3)>.92)rect(x,y,5+Math.floor(rng(x+y)*10),1,y<218?'#52617c':'#344d6b')}}
-}
-function cottage(wx,scale=1){
- let x=Math.floor(wx-camera),y=125;if(x<-90||x>W+90)return;
- ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);
- // reflection
- rect(5,53,66,3,'#a06a60');rect(15,59,45,2,'#d18b69');
- // stilts and deck
- [8,26,49,66].forEach(a=>rect(a,35,3,29,'#583d45'));rect(0,32,78,5,'#9a7058');rect(2,37,75,2,'#c18c64');
- // cottage body
- rect(12,8,53,25,'#795464');rect(9,12,59,21,'#b47d69');rect(14,15,49,18,'#805665');
- // roof pixels
- rect(8,8,61,4,'#4c405e');rect(14,3,49,5,'#594365');rect(22,0,33,4,'#6b4b69');
- // glowing windows
- rect(20,17,10,10,'#f5b65f');rect(22,19,6,6,'#ffe6a0');rect(45,17,10,10,'#f5b65f');rect(47,19,6,6,'#ffe6a0');
- rect(34,21,7,12,'#49364c');rect(36,23,3,7,'#d18a58');
- // lamp
- rect(72,22,2,12,'#5a4049');rect(69,20,8,8,'#f4a94e');rect(71,22,4,4,'#fff0a0');
- ctx.restore();
-}
-function wheel(wx){
- const x=Math.floor(wx-camera);if(x<-20||x>W+20)return;const y=151,r=15;
- ctx.strokeStyle='#a8795f';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();
- for(let i=0;i<8;i++){let a=i*Math.PI/4+time*.22;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r);ctx.stroke()}
- rect(x-3,y-3,6,6,'#d2a06b');
-}
-function deck(){
- rect(0,GROUND_Y,W,5,'#d0a078');rect(0,GROUND_Y+5,W,18,'#805a51');rect(0,GROUND_Y+23,W,3,'#4d414e');
- for(let x=-(camera%24);x<W;x+=24){rect(x,GROUND_Y+1,1,17,'#513d49');rect(x+3,GROUND_Y+8,2,1,'#e0ad7d')}
- // posts
- for(let x=-(camera%72);x<W;x+=72){rect(x,GROUND_Y+23,4,25,'#4b3c4b');rect(x-2,GROUND_Y+22,8,3,'#b98a65')}
- // lanterns
- for(let wx=110;wx<WORLD_WIDTH;wx+=205){let x=Math.floor(wx-camera);if(x<0||x>W)continue;rect(x,GROUND_Y-20,2,21,'#4b3b49');rect(x-4,GROUND_Y-26,10,9,'#e68b43');rect(x-2,GROUND_Y-24,6,5,'#ffe7a0');ctx.fillStyle='#f6a94b';ctx.globalAlpha=.16;ctx.beginPath();ctx.arc(x+1,GROUND_Y-21,13,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
-}
-function fallback(){
- const x=Math.round(player.x-camera),y=Math.round(player.y);
- // shadow
- rect(x+5,y+29,22,3,'#11172b');
- // pixel character, drawn in 32x32 grid
- rect(x+10,y+3,12,3,'#30243e');rect(x+7,y+6,18,8,'#30243e');rect(x+9,y+8,14,7,'#efbd91');rect(x+7,y+5,18,4,'#4c3650');rect(x+8,y+13,16,3,'#b47a68');
- rect(x+8,y+16,16,10,'#678c9a');rect(x+5,y+17,4,9,'#678c9a');rect(x+23,y+17,4,9,'#678c9a');
- rect(x+10,y+26,5,5,'#3d334b');rect(x+18,y+26,5,5,'#3d334b');rect(x+11,y+9,2,2,'#29243a');rect(x+20,y+9,2,2,'#29243a');
- if(player.walking&&Math.floor(time*8)%2){rect(x+8,y+28,6,3,'#3d334b');rect(x+19,y+26,5,5,'#3d334b')}
-}
-function drawPlayer(){
- const x=Math.round(player.x-camera),y=Math.round(player.y);
- if(spriteReady&&sprite.naturalWidth>=SPRITE_W&&sprite.naturalHeight>=SPRITE_H){
-  const frames=Math.max(1,Math.floor(sprite.naturalWidth/SPRITE_W));const f=player.walking?Math.floor(time*FRAME_RATE)%Math.min(FRAME_COUNT,frames):0;
-  ctx.save();if(player.dir<0){ctx.translate(x+player.w,y);ctx.scale(-1,1);ctx.drawImage(sprite,f*SPRITE_W,0,SPRITE_W,SPRITE_H,0,0,player.w,player.h)}else ctx.drawImage(sprite,f*SPRITE_W,0,SPRITE_W,SPRITE_H,x,y,player.w,player.h);ctx.restore();
- }else fallback();
-}
-function draw(){
- ctx.imageSmoothingEnabled=false;sky();mountains();water();
- // far cottage and water wheel
- cottage(220,.72);cottage(1030,.82);cottage(1450,.7);wheel(280);wheel(1088);
- // distant reflections before the foreground dock
- for(let i=0;i<8;i++){let x=(i*73-camera*.55)%W;if(x<0)x+=W;rect(x,205+(i%4)*13,18+(i%3)*7,1,'#a96d70')}
- deck();cottage(640,1);cottage(1260,.92);
- drawPlayer();
- // scene title card
- if(player.x<150){ctx.fillStyle='#f5e4c6';ctx.font='7px monospace';ctx.fillText('FOLLOW THE LITTLE LIGHTS',12,16)}
-}
-function update(dt){
- const left=keys.ArrowLeft||keys.a||keys.A||touchL,right=keys.ArrowRight||keys.d||keys.D||touchR;
- player.walking=!!(left!==right);
- if(left!==right){const d=right?1:-1;player.dir=d;player.x+=d*MOVE_SPEED*dt}
- player.x=Math.max(0,Math.min(WORLD_WIDTH-player.w,player.x));
- player.y=GROUND_Y-player.h;
- camera=Math.max(0,Math.min(WORLD_WIDTH-W,player.x-W*.42));
- time+=dt;
-}
-function loop(ts){const dt=Math.min(.04,(ts-last)/1000||0);last=ts;update(dt);draw();requestAnimationFrame(loop)}
-window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();keys[e.key]=true});
-window.addEventListener('keyup',e=>keys[e.key]=false);
-window.addEventListener('blur',()=>{Object.keys(keys).forEach(k=>keys[k]=false);touchL=touchR=false});
-function bind(id,side){const el=document.getElementById(id);const down=e=>{e.preventDefault();if(side==='L')touchL=true;else touchR=true};const up=e=>{e.preventDefault();if(side==='L')touchL=false;else touchR=false};el.addEventListener('pointerdown',down);['pointerup','pointercancel','pointerleave'].forEach(ev=>el.addEventListener(ev,up))}
-bind('left','L');bind('right','R');requestAnimationFrame(loop);
+function water(){r(0,185,W,85,'#192f48');for(let y=190;y<H;y+=10)for(let x=0;x<W;x+=1)if(Math.sin((x+cam*.45)*.12+y*.31+t*1.4)>.94)r(x,y,5+((x+y)%11),1,y<224?'#52617c':'#344d6b')}
+function cabin(wx,sc){const x=Math.floor(wx-cam);if(x<-90||x>W+90)return;ctx.save();ctx.translate(x,129);ctx.scale(sc,sc);
+ r(8,49,66,3,'#9e6b65');r(15,56,48,2,'#c18370');[8,27,51,68].forEach(a=>r(a,32,3,28,'#563d48'));r(0,29,80,5,'#b28664');r(2,34,76,2,'#d3a078');
+ r(12,8,56,23,'#825b69');r(9,12,62,20,'#b78070');r(15,15,50,17,'#875968');r(7,8,66,4,'#4a405b');r(13,3,54,5,'#5d4568');r(23,0,33,4,'#76506d');
+ [[21,17],[48,17]].forEach(([x,y])=>{r(x,y,10,10,'#f5b35e');r(x+2,y+2,6,6,'#ffedac')});r(35,21,8,13,'#49354b');r(37,23,4,8,'#d08b5b');r(75,21,2,11,'#59404b');r(71,18,9,9,'#f5a84e');r(73,20,5,5,'#fff0a2');ctx.restore()}
+function wheel(wx){const x=Math.floor(wx-cam),y=158;if(x<-20||x>W+20)return;ctx.strokeStyle='#ad8064';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.stroke();for(let i=0;i<8;i++){const a=i*Math.PI/4+t*.2;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a)*14,y+Math.sin(a)*14);ctx.stroke()}r(x-3,y-3,6,6,'#d4a16d')}
+function platform(){r(0,GROUND,W,5,'#d2a179');r(0,GROUND+5,W,18,'#805951');r(0,GROUND+23,W,3,'#4c3e4b');for(let x=-(cam%24);x<W;x+=24){r(x,GROUND+1,1,17,'#513d49');r(x+3,GROUND+8,2,1,'#e4b382')}for(let x=-(cam%72);x<W;x+=72){r(x,GROUND+22,4,25,'#493b49');r(x-2,GROUND+21,8,3,'#b98b68')}
+ for(let wx=100;wx<WORLD;wx+=210){let x=wx-cam;if(x<0||x>W)continue;r(x,GROUND-18,2,18,'#4b3b49');r(x-4,GROUND-25,10,9,'#e98b43');r(x-2,GROUND-23,6,5,'#ffeba0');ctx.globalAlpha=.13;ctx.fillStyle='#ffb34f';ctx.beginPath();ctx.arc(x+1,GROUND-21,13,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}}
+function fallback(){let x=Math.round(p.x-cam),y=Math.round(p.y);r(x+5,y+29,22,3,'#11172b');r(x+10,y+3,12,3,'#30243e');r(x+7,y+6,18,8,'#30243e');r(x+9,y+8,14,7,'#efbd91');r(x+7,y+5,18,4,'#4c3650');r(x+8,y+13,16,3,'#b47a68');r(x+8,y+16,16,10,'#678c9a');r(x+5,y+17,4,9,'#678c9a');r(x+23,y+17,4,9,'#678c9a');r(x+10,y+26,5,5,'#3d334b');r(x+18,y+26,5,5,'#3d334b');r(x+11,y+9,2,2,'#29243a');r(x+20,y+9,2,2,'#29243a');if(p.walking&&Math.floor(t*9)%2){r(x+8,y+28,6,3,'#3d334b');r(x+19,y+26,5,5,'#3d334b')}}
+function player(){let x=Math.round(p.x-cam),y=Math.round(p.y);if(imageReady&&img.naturalWidth>=SPRITE_W&&img.naturalHeight>=SPRITE_H){const frames=Math.max(1,Math.floor(img.naturalWidth/SPRITE_W)),f=p.walking?Math.floor(t*FRAME_RATE)%Math.min(FRAME_COUNT,frames):0;ctx.save();if(p.dir<0){ctx.translate(x+p.w,y);ctx.scale(-1,1);ctx.drawImage(img,f*SPRITE_W,0,SPRITE_W,SPRITE_H,0,0,p.w,p.h)}else ctx.drawImage(img,f*SPRITE_W,0,SPRITE_W,SPRITE_H,x,y,p.w,p.h);ctx.restore()}else fallback()}
+function button(x,y,dir){ctx.globalAlpha=.72;r(x,y,43,35,'#202543');r(x+1,y+1,41,2,'#a89abb');ctx.fillStyle='#f9e6b9';ctx.beginPath();if(dir<0){ctx.moveTo(x+13,y+17);ctx.lineTo(x+27,y+7);ctx.lineTo(x+27,y+27)}else{ctx.moveTo(x+30,y+17);ctx.lineTo(x+16,y+7);ctx.lineTo(x+16,y+27)}ctx.closePath();ctx.fill();ctx.globalAlpha=1}
+function draw(){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#11152d';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.setTransform(scale,0,0,scale,ox,oy);ctx.imageSmoothingEnabled=false;sky();scenery();water();cabin(220,.72);cabin(1030,.8);cabin(1650,.7);wheel(280);wheel(1090);for(let i=0;i<8;i++){let x=(i*71-cam*.4)%W;if(x<0)x+=W;r(x,205+(i%4)*12,19,1,'#a96d70')}platform();cabin(640,1);cabin(1290,.92);player();button(14,H-49,-1);button(W-57,H-49,1)}
+function update(dt){const l=keys.left,rgt=keys.right;p.walking=l!==rgt;if(p.walking){p.dir=rgt?1:-1;p.x+=p.dir*SPEED*dt}p.x=Math.max(0,Math.min(WORLD-p.w,p.x));p.y=GROUND-p.h;cam=Math.max(0,Math.min(WORLD-W,p.x-W*.42));t+=dt}
+let logicalPointer=null;
+function pointer(e,down){const rect=canvas.getBoundingClientRect();const x=(e.clientX-rect.left)*canvas.width/rect.width,y=(e.clientY-rect.top)*canvas.height/rect.height;const lx=(x-ox)/scale,ly=(y-oy)/scale;if(down){if(ly>H-58&&lx<68)keys.left=true;else if(ly>H-58&&lx>W-70)keys.right=true;else logicalPointer='';}else{keys.left=false;keys.right=false;logicalPointer=null}}
+canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture?.(e.pointerId);pointer(e,true)});canvas.addEventListener('pointerup',e=>{e.preventDefault();pointer(e,false)});canvas.addEventListener('pointercancel',e=>pointer(e,false));
+addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','a','A','d','D'].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.left=true;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=true});
+addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.left=false;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=false});addEventListener('blur',()=>{keys.left=keys.right=false});
+function loop(ts){const dt=Math.min(.04,(ts-last)/1000||0);last=ts;update(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
 })();
 </script>
 </body>
