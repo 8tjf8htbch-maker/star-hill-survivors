@@ -221,9 +221,9 @@ function drawCompanionActivities(){
      text(speaker.name+'「'+message+'」',240,112,7,'#fff0c9','center');
      text(listener.name+'「'+dialogue[3]+'」',240,122,7,'#d9e5ff','center');
      // 会話を日誌に記録する。同じ会話の連続記録を防ぐため、30秒間隔にする。
-     if(t-(Number(state.lastConversationAt)||-100)>30){
+     if(now()-(Number(state.lastConversationAt)||0)>30000){
       addEvent(speaker.name+'と'+listener.name+'：'+message+' / '+dialogue[3],'仲間の会話');
-      state.lastConversationAt=t;
+      state.lastConversationAt=now();
       save();
      }
     }
