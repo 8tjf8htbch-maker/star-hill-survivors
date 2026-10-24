@@ -121,16 +121,16 @@ function checkStory(){
 const sprite=new Image();let spriteReady=false;sprite.onload=()=>spriteReady=true;sprite.onerror=()=>spriteReady=false;sprite.src='player.png';
 const stars=Array.from({length:105},()=>({x:Math.random()*W,y:Math.random()*145,s:Math.random()>.8?2:1,p:Math.random()*7}));
 const eventTemplates=[
-  ['luna','kai','台所からいい匂いがしたので、カイが食器を並べてくれた。','wood',1],
-  ['kai','mio','カイが壊れた植木鉢を直し、ミオが新しい芽を植えた。','herbs',1],
-  ['mio','luna','ミオの摘んだ薬草で、ルナが香りのよいお茶を淹れた。','herbs',1],
-  ['luna','mio','ルナとミオが窓辺で、昔見た流れ星の話をしていた。','memory',0],
-  ['kai','luna','カイが古いランタンを修理した。今夜は少し明るくなりそう。','lamp',0],
-  ['mio','kai','ミオがカイの作業机に小さな花を飾った。','memory',0],
-  ['luna','kai','焦げたパンを囲んで、三人で笑い声をあげた。','memory',0],
-  ['kai','mio','カイがデッキの端に腰掛け、ミオに星座を教えていた。','memory',0],
-  ['mio','luna','ミオが庭に小さな花壇を作り、ルナが水をあげた。','flower',0],
-  ['luna','kai','ルナが「帰ってきたときに灯りが見えるように」とランタンを磨いた。','memory',0]
+  ['mina','joe','ジョーが食器を並べ、ミナが焚き火のそばを整えてくれた。','wood',1],
+  ['joe','sera','セラが見つけた薬草を、ジョーがお茶にしてくれた。','herbs',1],
+  ['sera','mina','ミナが壊れた植木鉢を直し、セラが小さな芽を植えた。','herbs',1],
+  ['mina','sera','ミナとセラが窓辺で、昔見た流れ星の話をしていた。','memory',0],
+  ['joe','mina','ジョーが古いランタンを修理した。今夜は少し明るくなりそう。','lamp',0],
+  ['sera','joe','セラがジョーの作業机に小さな花を飾った。','memory',0],
+  ['mina','joe','少し焦げたパンを囲んで、みんなで笑い声をあげた。','memory',0],
+  ['joe','sera','ジョーがデッキの端に腰掛け、セラに星座を教えてもらった。','memory',0],
+  ['sera','mina','セラが庭に小さな花壇を作り、ミナが水をあげた。','flower',0],
+  ['mina','joe','ミナが「帰ってきたときに灯りが見えるように」とランタンを磨いた。','memory',0]
 ];
 function addEvent(text,type='暮らしの記録'){state.events.unshift({text,type,at:now()});state.events=state.events.slice(0,40)}
 function remember(text){if(!state.memories.includes(text))state.memories.unshift(text);state.memories=state.memories.slice(0,30)}
