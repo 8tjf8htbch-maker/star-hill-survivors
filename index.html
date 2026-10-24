@@ -7,10 +7,19 @@
 <title>星の丘のサバイバーズ</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#11152d}body{touch-action:none}canvas{display:block;width:100vw;height:100dvh;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
+#movePad{display:none;position:fixed;left:max(16px,env(safe-area-inset-left));bottom:max(22px,env(safe-area-inset-bottom));z-index:5;gap:12px;touch-action:none;user-select:none}
+.moveButton{width:68px;height:68px;border:2px solid #c6b5d8;border-radius:18px;background:rgba(28,32,62,.82);color:#fff0c9;font:700 30px system-ui;box-shadow:0 3px 0 rgba(0,0,0,.35);display:grid;place-items:center;touch-action:none;user-select:none;-webkit-user-select:none}
+.moveButton:active{background:rgba(105,86,130,.95);transform:translateY(2px)}
+@media (hover:none),(pointer:coarse){#movePad{display:flex}}
+@media (max-width:420px){.moveButton{width:60px;height:60px;font-size:26px}#movePad{gap:8px}}
 </style>
 </head>
 <body>
 <canvas id="game" aria-label="星の丘のサバイバーズ。基地で仲間と過ごし、探索して、思い出を残そう"></canvas>
+<div id="movePad" aria-label="キャラクター移動コントローラー">
+ <button class="moveButton" id="moveLeft" aria-label="左へ移動">◀</button>
+ <button class="moveButton" id="moveRight" aria-label="右へ移動">▶</button>
+</div>
 <script>
 (()=>{
 'use strict';
@@ -109,7 +118,7 @@ function resize(){const dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=
 addEventListener('resize',resize);resize();load();checkStory();
 addEventListener('pagehide',()=>{state.lastPlayedAt=now();state.lastSeen=state.lastPlayedAt;save()});
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
-function text(s,x,y,size=8,color='#f4e5c4',align='left'){ctx.font=size+'px monospace';ctx.textAlign=align;ctx.textBaseline='top';ctx.fillStyle=color;ctx.fillText(s,x,y)}
+function text(s,x,y,size=8,color='#f4e5c4',align='left'){ctx.font=(size*1.2)+'px monospace';ctx.textAlign=align;ctx.textBaseline='top';ctx.fillStyle=color;ctx.fillText(s,x,y)}
 function panel(x,y,w,h){rect(x,y,w,h,'#171a32');rect(x,y,w,1,'#a98d8a');rect(x,y+h-1,w,1,'#5d526b');rect(x,y,1,h,'#8e7d91');rect(x+w-1,y,1,h,'#5d526b')}
 function sky(){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#10152e');g.addColorStop(.45,'#272447');g.addColorStop(.78,'#604563');g.addColorStop(1,'#98687b');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(s=>rect(s.x,s.y,s.s,s.s,Math.sin(t*2+s.p)>.6?'#fff0bf':'#c1c9e9'));rect(382,22,21,21,'#f5e3b8');rect(391,19,17,22,'#f5e3b8');rect(399,25,11,16,'#292447')}
 function ridge(base,color,step,seed){ctx.fillStyle=color;for(let x=-step;x<W+step;x+=step){const h=18+Math.abs(Math.sin(x*.027+seed))*35;ctx.beginPath();ctx.moveTo(x,base);ctx.lineTo(x+step*.48,base-h);ctx.lineTo(x+step,base);ctx.closePath();ctx.fill()}}
@@ -146,7 +155,10 @@ function handle(x,y){if(dialog){if(dialog.kind==='areas'&&y>80&&y<140){const idx
  if(state.mode==='base'){if(y>226){if(x<100)talk();else if(x<201){dialog={title:'探索エリア',lines:['1. 忘れられた森（木材・食料）','2. 沈んだ旧市街（金属・部品）','3. 星降りの高原（星晶・高純度金属）'],kind:'areas'};}else if(x<297)build();else if(x<385)journal();else memories();return}if(y<210){const near=state.companions.find(c=>Math.abs((c.x+16)-x)<25);if(near){dialog={title:near.name+' ・ '+near.role,lines:[near.mood,'もう少し一緒に過ごす？']};addEvent(near.name+'と基地で少し話した。','仲間との交流');save()}else{player.x=Math.max(0,Math.min(W-32,x-16));player.dir=x>player.x?1:-1}}}else if(state.mode==='explore'){if(y>226&&x<120)returnFromExplore();else if(y>226&&x>350){toast='足元の草むらを調べている…';toastUntil=now()+2000}}else if(y>226){state.mode='base';dialog=null}}
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();const rect=canvas.getBoundingClientRect();const px=(e.clientX-rect.left)*canvas.width/rect.width,py=(e.clientY-rect.top)*canvas.height/rect.height;handle((px-ox)/scale,(py-oy)/scale)});
 addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','a','A','d','D',' ','Enter','Escape'].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.left=true;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=true;if(e.key==='Escape'||e.key==='Enter'){if(dialog)dialog=null;else if(state.mode==='explore')returnFromExplore()}});
-addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.left=false;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=false});addEventListener('blur',()=>{keys.left=keys.right=false;save()});
+addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.left=false;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=false});
+function bindMoveButton(id,direction){const el=document.getElementById(id);const start=e=>{e.preventDefault();keys[direction]=true;if(el.setPointerCapture&&e.pointerId!==undefined)try{el.setPointerCapture(e.pointerId)}catch(_){}};const stop=e=>{e.preventDefault();keys[direction]=false};el.addEventListener('pointerdown',start);el.addEventListener('pointerup',stop);el.addEventListener('pointercancel',stop);el.addEventListener('lostpointercapture',()=>{keys[direction]=false});}
+bindMoveButton('moveLeft','left');bindMoveButton('moveRight','right');
+addEventListener('blur',()=>{keys.left=keys.right=false;save()});
 function update(dt){t+=dt;if(state.mode==='base'){player.walking=keys.left!==keys.right;if(player.walking){player.dir=keys.right?1:-1;player.x+=player.dir*75*dt}player.x=Math.max(8,Math.min(W-40,player.x))}else if(state.mode==='explore'&&state.explore&&now()>=state.explore.ends)returnFromExplore();if(Math.floor(t)%20===0&&Math.abs(t-Math.floor(t))<dt)save()}
 function loop(ts){const dt=Math.min(.04,(ts-last)/1000||0);last=ts;update(dt);render();requestAnimationFrame(loop)}
 save();requestAnimationFrame(loop);
