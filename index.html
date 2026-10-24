@@ -134,7 +134,37 @@ addEventListener('pagehide',()=>{state.lastPlayedAt=now();state.lastSeen=state.l
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
 function text(s,x,y,size=8,color='#f4e5c4',align='left'){ctx.font=(size*1.2)+'px monospace';ctx.textAlign=align;ctx.textBaseline='top';ctx.fillStyle=color;ctx.fillText(s,x,y)}
 function panel(x,y,w,h){rect(x,y,w,h,'#171a32');rect(x,y,w,1,'#a98d8a');rect(x,y+h-1,w,1,'#5d526b');rect(x,y,1,h,'#8e7d91');rect(x+w-1,y,1,h,'#5d526b')}
-function sky(){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#10152e');g.addColorStop(.45,'#272447');g.addColorStop(.78,'#604563');g.addColorStop(1,'#98687b');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(s=>rect(s.x,s.y,s.s,s.s,Math.sin(t*2+s.p)>.6?'#fff0bf':'#c1c9e9'));rect(382,22,21,21,'#f5e3b8');rect(391,19,17,22,'#f5e3b8');rect(399,25,11,16,'#292447')}
+function getTimeOfDay(){
+ const hour=new Date().getHours();
+ if(hour>=6&&hour<11)return 'morning';
+ if(hour>=11&&hour<16)return 'day';
+ if(hour>=16&&hour<19)return 'evening';
+ return 'night';
+}
+function sky(){
+ const phase=getTimeOfDay();
+ const palettes={
+  morning:['#536b91','#a8a4bd','#dba58c','#e6bd9c'],
+  day:['#34577d','#6685a0','#b8a0a8','#d4a18f'],
+  evening:['#211f45','#66436a','#bd6d79','#d99a81'],
+  night:['#10152e','#272447','#604563','#98687b']
+ };
+ const colors=palettes[phase],g=ctx.createLinearGradient(0,0,0,H);
+ g.addColorStop(0,colors[0]);g.addColorStop(.45,colors[1]);g.addColorStop(.78,colors[2]);g.addColorStop(1,colors[3]);
+ ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ if(phase==='night'||phase==='evening'){
+  stars.forEach(s=>{if(phase==='night'||s.y<65)rect(s.x,s.y,s.s, s.s,Math.sin(t*2+s.p)>.6?'#fff0bf':'#c1c9e9')});
+ }else{
+  // Soft, blocky clouds drift gently during daylight.
+  for(let i=0;i<4;i++){const x=((i*137+t*(phase==='morning'?2:1.2))%(W+70))-35,y=30+(i%3)*25;rect(x,y,25,4,'#d8d6d9');rect(x+6,y-4,14,4,'#d8d6d9');rect(x+25,y+2,12,3,'#d8d6d9')}
+ }
+ if(phase==='night'){
+  rect(382,22,21,21,'#f5e3b8');rect(391,19,17,22,'#f5e3b8');rect(399,25,11,16,'#292447');
+ }else{
+  const sunX=phase==='morning'?78:phase==='day'?365:245,sunY=phase==='morning'?45:phase==='day'?30:62;
+  rect(sunX,sunY,12,12,'#f6d7a0');rect(sunX-4,sunY+4,20,4,'#f6d7a0');rect(sunX+4,sunY-4,4,20,'#f6d7a0');
+ }
+}
 function ridge(base,color,step,seed){ctx.fillStyle=color;for(let x=-step;x<W+step;x+=step){const h=18+Math.abs(Math.sin(x*.027+seed))*35;ctx.beginPath();ctx.moveTo(x,base);ctx.lineTo(x+step*.48,base-h);ctx.lineTo(x+step,base);ctx.closePath();ctx.fill()}}
 function trees(){for(let i=0;i<19;i++){let x=i*29+Math.sin(i*8)*7,y=157+Math.sin(i*5)*7,sway=Math.sin(t*1.2+i*1.7)*1.5;rect(x+6+sway,y,4,29,'#142c35');ctx.fillStyle='#19373c';ctx.beginPath();ctx.moveTo(x+8+sway,y-24);ctx.lineTo(x-5+sway,y+8);ctx.lineTo(x+21+sway,y+8);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(x+8+sway,y-12);ctx.lineTo(x-7+sway,y+18);ctx.lineTo(x+23+sway,y+18);ctx.closePath();ctx.fill()}}
 function water(){rect(0,184,W,86,'#192f48');for(let i=0;i<45;i++){let x=(i*37+t*5)%W,y=190+(i*17)%72;rect(x,y,8+(i%4)*3,1,Math.sin(t*1.4+i)>.2?'#52617c':'#344d6b')}}
@@ -191,7 +221,9 @@ function drawBase(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);tr
  drawCompanionActivities();
  character(player.x,170,'#b6c9da',player.walking,player.dir);
  cabin(198,126,.92);
+ const phaseLabel=({morning:'朝',day:'昼',evening:'夕方',night:'夜'})[getTimeOfDay()];
  text('星の丘のサバイバーズ',10,9,10,'#fff0c9');
+ text(phaseLabel,W-10,23,8,'#fff0c9','right');
  text('木材 '+Math.floor(state.wood)+'  食料 '+Math.floor(state.food)+'  金属 '+Math.floor(state.metal)+'  星晶 '+Math.floor(state.starCrystals),10,23,8,'#d7d7ed');
  text('STEP '+state.progressStep+'/5',W-10,10,8,'#f4e5c4','right');
 }
