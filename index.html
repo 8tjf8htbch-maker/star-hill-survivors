@@ -143,6 +143,23 @@ function cabin(x,y,scale=1){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale)
 function wheel(x,y){ctx.strokeStyle='#ad8064';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.stroke();for(let i=0;i<8;i++){const a=i*Math.PI/4+t*.22;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a)*14,y+Math.sin(a)*14);ctx.stroke()}rect(x-3,y-3,6,6,'#d4a16d')}
 function deck(){rect(0,202,W,6,'#d2a179');rect(0,208,W,19,'#805951');rect(0,227,W,3,'#4c3e4b');for(let x=0;x<W;x+=24){rect(x,203,1,22,'#513d49');rect(x+3,212,2,1,'#e4b382')}for(let x=14;x<W;x+=80){rect(x,228,4,32,'#493b49');rect(x-2,227,8,3,'#b98b68')}for(let x=50;x<W;x+=145)lamp(x,196)}
 function character(x,y,color='#82b5c6',walking=false,dir=1){rect(x+5,y+29,22,3,'#11172b');if(spriteReady&&sprite.naturalWidth>=32&&sprite.naturalHeight>=32){let f=walking?Math.floor(t*FRAME_RATE)%(Math.min(FRAME_COUNT,Math.floor(sprite.naturalWidth/32))):0;ctx.save();if(dir<0){ctx.translate(x+32,y);ctx.scale(-1,1);ctx.drawImage(sprite,f*32,0,32,32,0,0,32,32)}else ctx.drawImage(sprite,f*32,0,32,32,x,y,32,32);ctx.restore();return}rect(x+10,y+3,12,3,'#30243e');rect(x+7,y+6,18,8,'#30243e');rect(x+9,y+8,14,7,'#efbd91');rect(x+7,y+5,18,4,'#4c3650');rect(x+8,y+13,16,3,'#b47a68');rect(x+8,y+16,16,10,color);let step=walking?Math.sin(t*FRAME_RATE*Math.PI)*2:0;rect(x+5,y+17+step,4,8,color);rect(x+23,y+17-step,4,8,color);rect(x+10,y+26+step,5,Math.max(2,5-step),'#3d334b');rect(x+18,y+26-step,5,Math.max(2,5+step),'#3d334b');rect(x+11,y+9,2,2,'#29243a');rect(x+20,y+9,2,2,'#29243a')}
+function drawCompanionActivities(){
+ const unlocked=state.companions.filter(c=>c.unlocked);
+ const has=id=>(state.facilities.find(f=>f.id===id)?.level||0)>0;
+ unlocked.forEach((c,i)=>{
+  let x=c.x+Math.sin(t*.45+i*2)*3,y=170,activity='散歩中';
+  if(has('farm')&&i===0){x=42+Math.sin(t*.7)*5;y=166;activity='農園のお世話';}
+  else if(has('bonfire')&&i===1){x=254+Math.sin(t*.5)*4;y=171;activity='焚き火でひと休み';}
+  else if(has('lumber_mill')&&i===2){x=416+Math.sin(t*.6)*4;y=168;activity='木材を整理中';}
+  // Activities are small ambient moments, not new gameplay systems.
+  character(x,y,c.color,Math.sin(t*.6+i)>0.72,1);
+  text(c.name,x+16,y-8,7,'#f4e5c4','center');
+  if(Math.sin(t*1.1+i*2)>0.985){
+   panel(Math.max(4,Math.min(W-96,x-22)),Math.max(42,y-28),92,15);
+   text(activity,Math.max(50,Math.min(W-50,x+24)),Math.max(45,y-25),6,'#fff0c9','center');
+  }
+ });
+}
 function drawFacilityDecorations(){
  const level=id=>state.facilities.find(f=>f.id===id)?.level||0;
  // 焚き火：建設すると拠点中央に炎と石囲いが現れる
@@ -170,8 +187,8 @@ function drawFacilityDecorations(){
  if(level('hut')>0){cabin(174,132,0.72);text('小屋 Lv.'+level('hut'),203,171,6,'#fff0c9','center')}
 }
 function drawBase(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);trees();water();cabin(34,133,.8);cabin(365,141,.7);wheel(390,172);deck();drawFacilityDecorations();if(state.lamps){for(let i=0;i<4;i++)lamp(105+i*82,187)}if(state.flowers){for(let i=0;i<9;i++){let x=28+i*49;rect(x,198,2,4,'#5d9b70');rect(x-2,197,3,3,i%2?'#efb2d0':'#e9d58a')}}if(state.bridge){rect(0,199,W,3,'#d6b58a');for(let x=10;x<W;x+=35)rect(x,195,3,5,'#e5c39b')}
- // companions wander subtly around their familiar spots
- state.companions.filter(c=>c.unlocked).forEach((c,i)=>{const x=c.x+Math.sin(t*.45+i*2)*3;character(x,170,c.color,Math.sin(t*.45+i)>0.88,1);text(c.name,x+16,162,7,'#f4e5c4','center')});
+ // 仲間は建設済み施設の近くで、それぞれの暮らしを見せる
+ drawCompanionActivities();
  character(player.x,170,'#b6c9da',player.walking,player.dir);
  cabin(198,126,.92);
  text('星の丘のサバイバーズ',10,9,10,'#fff0c9');
