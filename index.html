@@ -361,8 +361,22 @@ function returnFromExplore(){
 }
 function build(){const facilities=state.facilities;dialog={title:'施設を建設・強化',lines:facilities.map((f,i)=>`${i+1}.${f.name} Lv.${f.level} 木${f.woodCost[Math.min(f.level, f.woodCost.length-1)]||'—'} 金${f.metalCost[Math.min(f.level, f.metalCost.length-1)]||'—'}`),kind:'build',options:facilities.map(f=>f.id)};}
 function upgrade(id){const f=state.facilities.find(x=>x.id===id);if(!f)return;const idx=Math.min(f.level,f.woodCost.length-1),wc=f.woodCost[idx],mc=f.metalCost[idx];if(f.level>=f.woodCost.length){toast='この施設は最大レベルです。';toastUntil=now()+2600;return}if(state.wood<wc||state.metal<mc){toast='資源が足りません。木材'+wc+'・金属'+mc+'が必要です。';toastUntil=now()+2600;dialog=null;return}state.wood-=wc;state.metal-=mc;f.level++;f.status='active';state.level++;if(id==='bonfire'){state.lamps=true;remember('焚き火に最初の灯りがともった');addEvent('焚き火が修理され、基地に明かりが戻った。','基地の変化');state.progressStep=Math.max(state.progressStep,2)}if(id==='hut'){checkStory()}if(id==='farm')addEvent('簡易農園が育ち、食料を生産できるようになった。','基地の変化');if(id==='diner')addEvent('集いの食堂が整い、ジョーの料理が始まった。','基地の変化');if(id==='workshop'){state.bridge=true;remember('クラフト工房が整った');}if(id==='observatory')addEvent('星空の観測台が整い、星晶の生産が始まった。','基地の変化');if(id==='farm'&&f.level>=1)state.flowers=true;dialog={title:f.name+'が育った！',lines:[f.name+' Lv.'+f.level+' になった。','必要資源：木材'+wc+'・金属'+mc,'基地の景色と仲間の暮らしが少し変わった。']};save()}
-function journal(){dialog={title:'暮らしの日誌',lines:state.events.length?state.events.slice(0,7).map(e=>'・'+e.text):['まだ記録はない。','仲間と話したり、探索に出たりしよう。']};}
-function memories(){dialog={title:'思い出のかけら',lines:state.memories.length?state.memories.slice(0,7).map(m=>'✦ '+m):['まだ思い出はない。','探索の発見や基地の変化がここに残る。']};}
+function journal(){
+ const lines=state.events.length?state.events.slice(0,7).map(e=>'・'+e.text):['まだ記録はない。','仲間と話したり、探索に出たりしよう。'];
+ const extras=[];
+ if(state.letters.length)extras.push('手紙 '+state.letters.length+'通');
+ if(state.photos.length)extras.push('写真 '+state.photos.length+'枚');
+ if(state.recipes.length)extras.push('レシピ '+state.recipes.length+'件');
+ dialog={title:'暮らしの日誌',lines:lines.concat(extras.length?['—— 見つけたもの ——',...extras]:[])};
+}
+function memories(){
+ const lines=state.memories.length?state.memories.slice(0,7).map(m=>'✦ '+m):['まだ思い出はない。','探索の発見や基地の変化がここに残る。'];
+ const keepsakes=[];
+ if(state.letters.length)keepsakes.push('【手紙】',...state.letters.slice(-3).reverse().map(x=>'✉ '+x));
+ if(state.photos.length)keepsakes.push('【写真】',...state.photos.slice(-3).reverse().map(x=>'▧ '+x));
+ if(state.recipes.length)keepsakes.push('【レシピ】',...state.recipes.slice(-3).reverse().map(x=>'♨ '+x));
+ dialog={title:'思い出のかけら',lines:lines.concat(keepsakes.length?['—— 大切に残したもの ——',...keepsakes]:[])};
+}
 function handle(x,y){if(dialog){if(dialog.kind==='areas'&&y>80&&y<140){const idx=Math.floor((y-82)/15);const area=['forest_1','city_2','highland_3'][idx];if(area){if(idx>0&&!state.clearedAreas.includes(idx===1?'forest_1':'city_2')){toast='先に前のエリアを探索しよう。';toastUntil=now()+2400;dialog=null;return}dialog=null;explore(area);return}}if(dialog.kind==='build'&&y>80&&y<180){let idx=Math.floor((y-82)/15);const id=dialog.options?.[idx];if(id){upgrade(id);return}}dialog=null;return}
  if(state.mode==='base'){if(y>226){if(x<100)talk();else if(x<201){dialog={title:'探索エリア',lines:['1. 忘れられた森（木材・食料）','2. 沈んだ旧市街（金属・部品）','3. 星降りの高原（星晶・高純度金属）'],kind:'areas'};}else if(x<297)build();else if(x<385)journal();else memories();return}if(y<210){const near=state.companions.find(c=>c.unlocked&&Math.abs((c.x+16)-x)<25);if(near){dialog={title:near.name+' ・ '+near.role,lines:[near.mood,'もう少し一緒に過ごす？']};addEvent(near.name+'と基地で少し話した。','仲間との交流');save()}else{player.x=Math.max(0,Math.min(W-32,x-16));player.dir=x>player.x?1:-1}}}else if(state.mode==='explore'){if(y>226&&x<120)returnFromExplore();else if(y>226&&x>350){toast='足元の草むらを調べている…';toastUntil=now()+2000}}else if(y>226){state.mode='base';dialog=null}}
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();const rect=canvas.getBoundingClientRect();const px=(e.clientX-rect.left)*canvas.width/rect.width,py=(e.clientY-rect.top)*canvas.height/rect.height;handle((px-ox)/scale,(py-oy)/scale)});
