@@ -12,7 +12,9 @@
 #movePad{display:none;position:fixed;left:max(16px,env(safe-area-inset-left));bottom:max(22px,env(safe-area-inset-bottom));z-index:5;gap:12px;touch-action:none;user-select:none}
 .moveButton{width:68px;height:68px;border:2px solid #c6b5d8;border-radius:18px;background:rgba(28,32,62,.82);color:#fff0c9;font:700 30px system-ui;box-shadow:0 3px 0 rgba(0,0,0,.35);display:grid;place-items:center;touch-action:none;user-select:none;-webkit-user-select:none}
 .moveButton:active{background:rgba(105,86,130,.95);transform:translateY(2px)}
-@media (orientation:landscape){#movePad{left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));gap:8px}.moveButton{width:54px;height:54px;border-radius:14px;font-size:24px}canvas{width:100vw;height:100dvh}}\n@media (orientation:portrait) and (max-height:430px){#movePad{gap:6px}.moveButton{width:48px;height:48px;font-size:22px}}\n@media (hover:none),(pointer:coarse){#movePad{display:flex}}
+@media (orientation:landscape){#movePad{left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));gap:8px}.moveButton{width:54px;height:54px;border-radius:14px;font-size:24px}canvas{width:100vw;height:100dvh}}
+@media (orientation:portrait) and (max-height:430px){#movePad{gap:6px}.moveButton{width:48px;height:48px;font-size:22px}}
+@media (hover:none),(pointer:coarse){#movePad{display:flex}}
 @media (max-width:420px){.moveButton{width:60px;height:60px;font-size:26px}#movePad{gap:8px}}
 </style>
 </head>
