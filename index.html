@@ -126,7 +126,7 @@ function drawBase(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);tr
  character(player.x,170,'#b6c9da',player.walking,player.dir);
  cabin(198,126,.92);
  text('星の丘のサバイバーズ',10,9,10,'#fff0c9');
- text('木 '+state.wood+' 食 '+state.food+' 金 '+state.metal+' 星晶 '+state.starCrystals,10,23,8,'#d7d7ed');
+ text('木材 '+state.wood+'  食料 '+state.food+'  金属 '+state.metal+'  星晶 '+state.starCrystals,10,23,8,'#d7d7ed');
  text('STEP '+state.progressStep+'/5',W-10,10,8,'#f4e5c4','right');
 }
 function drawExplore(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);trees();water();rect(0,203,W,67,'#243d3e');for(let i=0;i<30;i++){let x=(i*23+t*12)%W,y=185+(i*13)%68;rect(x,y,2,3,'#6a9b78')}rect(0,213,W,8,'#7b5b55');for(let x=0;x<W;x+=30)rect(x,213,2,8,'#b98b68');character(90,178,'#b6c9da',true,player.dir);text(({forest_1:'忘れられた森',city_2:'沈んだ旧市街',highland_3:'星降りの高原'})[state.explore?.area||state.currentArea]||'忘れられた森',10,10,10,'#fff0c9');text('探索中…　見つけたものを持ち帰ろう',10,24,8,'#e7dded');for(let i=0;i<4;i++){let x=250+i*45,y=185+Math.sin(t*2+i)*3;rect(x,y,7,6,i===2?'#a5d9e6':'#86b58b');rect(x+2,y-2,3,3,'#d9f1b5')}if(state.explore){let remaining=Math.max(0,state.explore.ends-now());text('帰還まで '+Math.ceil(remaining/1000)+'秒',W-10,10,8,'#fff0c9','right')}}
