@@ -203,7 +203,7 @@ function drawCompanionActivities(){
    x=220+i*13+Math.sin(t*.25+i)*2;y=172;activity='焚き火のそばで休んでいる';
    if(getFacilityLevel('bonfire')===0){x=160+i*35;y=171;activity='小屋で休んでいる';}
   }
-  drawCharacter(c,x,y);
+  character(x,y,c.color||'#d9a2c8',false,1);
   text(c.name,x+8,y-7,7,'#fff0c9','center');
   if(Math.sin(t*1.1+i*2)>.985){panel(x-20,y-23,64,12,'#25213bdc');text(activity,x+12,y-15,6,'#fff0c9','center');}
  });
