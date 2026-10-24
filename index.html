@@ -279,7 +279,25 @@ function drawControls(){if(state.mode==='base'){button(8,232,91,28,'仲間と話
 function drawDialog(){if(!dialog)return;panel(35,55,410,162);text(dialog.title,47,66,10,'#ffe7b6');let lines=dialog.lines||[];lines.slice(0,7).forEach((line,i)=>text(line,47,84+i*15,8,'#f0e6dd'));button(352,188,80,20,'閉じる','close')}
 function drawToast(){if(toast&&now()<toastUntil){panel(55,37,370,25);text(toast,240,45,8,'#fff0c9','center')}}
 function render(){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#11152d';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.setTransform(scale,0,0,scale,ox,oy);ctx.imageSmoothingEnabled=false;if(state.mode==='explore')drawExplore();else drawBase();drawControls();drawDialog();drawToast()}
-function talk(){const available=state.companions.filter(c=>c.unlocked);if(!available.length){dialog={title:'仲間との出会い',lines:['まずは焚き火を修理し、小さな小屋を建てよう。','仲間たちが少しずつ集まってくるよ。']};return}const c=available[Math.floor(Math.random()*available.length)];const lines=[c.mood,'今日のこと、あとで日誌にも残しておこう。','この基地の灯りを見ると、帰ってきたって感じがするね。','次の冒険も、みんなで帰ってこよう。'];const line=lines[Math.floor(Math.random()*lines.length)];dialog={title:c.name+' ・ '+c.role,lines:[line,'','小さな時間も、ここでの思い出。']};state.talkedToday=true;addEvent(c.name+'：「'+line+'」','仲間との会話');save()}
+function talk(){
+ const available=state.companions.filter(c=>c.unlocked);
+ if(!available.length){dialog={title:'仲間との出会い',lines:['まずは焚き火を修理し、小さな小屋を建てよう。','仲間たちが少しずつ集まってくるよ。']};return}
+ const c=available[Math.floor(Math.random()*available.length)];
+ const dialogue={
+  mina:['道具の手入れをしておいたよ。次の探索で役に立つといいな。','焚き火のそばって、不思議と安心するね。','いつか、この丘いっぱいに花を咲かせたいな。','帰ってきたとき、灯りが見える場所にしたいんだ。'],
+  joe:['今日は温かいスープを作ろうか。','みんなで食べると、いつもの料理も特別になるね。','新しいレシピを思いついたんだ。材料がそろったら試してみよう。','疲れた日は、ちゃんと食べて休むのが一番だよ。'],
+  sera:['今夜は星がよく見えそう。あとで一緒に空を見ない？','星の並びは、昔の道しるべだったのかもしれないね。','この丘から見る空、少しずつ好きになってきた。','まだ誰も知らない星の記録を見つけたいんだ。']
+ };
+ const lines=dialogue[c.id]||[c.mood,'今日のこと、あとで日誌にも残しておこう。','この基地の灯りを見ると、帰ってきたって感じがするね。'];
+ const line=lines[Math.floor(Math.random()*lines.length)];
+ const oldAffinity=Math.max(1,Number(c.affinity)||1);
+ c.affinityExp=(Number(c.affinityExp)||0)+1;
+ if(c.affinityExp>=3){c.affinityExp-=3;c.affinity=oldAffinity+1;addEvent(c.name+'との絆が深まり、なかよし度が'+c.affinity+'になった。','絆の記録');remember(c.name+'と少し心が通じた日');}
+ const affinity=Math.max(1,Number(c.affinity)||1);
+ const closeness=affinity>=4?'大切な仲間':affinity>=2?'親しい仲間':'仲間';
+ dialog={title:c.name+' ・ '+c.role,lines:[line,'なかよし度 '+affinity+'　（'+closeness+'）','話をするたび、少しずつ絆が深まる。']};
+ state.talkedToday=true;addEvent(c.name+'：「'+line+'」','仲間との会話');save()
+}
 function explore(area='forest_1'){if(state.mode==='explore')return;state.currentArea=area;state.mode='explore';state.explore={area,ends:now()+25000};player.x=72;dialog=null;toast='探索へ出発した。';toastUntil=now()+2500;save()}
 function returnFromExplore(){if(state.mode!=='explore')return;const area=state.explore?.area||state.currentArea;let found='古い道しるべを見つけた。';if(area==='forest_1'){const wood=4+Math.floor(Math.random()*5),food=2+Math.floor(Math.random()*3);state.wood+=wood;state.food+=food;found='古い種袋を見つけた。木材'+wood+'、食料'+food+'を持ち帰った。';if(!state.clearedAreas.includes(area)){state.clearedAreas.push(area);state.flowers=true;remember('忘れられた森で古い種袋を見つけた');}}else if(area==='city_2'){const metal=2+Math.floor(Math.random()*4),food=1+Math.floor(Math.random()*2);state.metal+=metal;state.food+=food;found='破れたレシピと金属'+metal+'を見つけた。';if(!state.clearedAreas.includes(area))state.clearedAreas.push(area);}else{const metal=3+Math.floor(Math.random()*3),crystal=1+Math.floor(Math.random()*2);state.metal+=metal;state.starCrystals+=crystal;found='星空のレンズの欠片と星晶'+crystal+'を見つけた。';if(!state.clearedAreas.includes(area))state.clearedAreas.push(area);}state.crystal=state.starCrystals;state.mode='base';state.explore=null;addEvent('探索から帰還。'+found,'探索記録');remember(found);checkStory();if(!dialog)dialog={title:'おかえり！',lines:[found,'仲間たちが、帰りを待っていたよ。']};save()}
 function build(){const facilities=state.facilities;dialog={title:'施設を建設・強化',lines:facilities.map((f,i)=>`${i+1}.${f.name} Lv.${f.level} 木${f.woodCost[Math.min(f.level, f.woodCost.length-1)]||'—'} 金${f.metalCost[Math.min(f.level, f.metalCost.length-1)]||'—'}`),kind:'build',options:facilities.map(f=>f.id)};}
