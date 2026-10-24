@@ -53,9 +53,10 @@ const defaultState=()=>({
 let state=defaultState(),toast='',toastUntil=0,dialog=null,player={x:72,dir:1,walking:false};
 function normalizeState(s){
  const d=defaultState();state={...d,...s};
- state.food=Number(s.food??0);state.metal=Number(s.metal??0);state.starCrystals=Number(s.starCrystals??s.crystal??0);
- state.herbs=Number(s.herbs??0);state.crystal=state.starCrystals;
- state.progressStep=Number(s.progressStep??0);state.clearedAreas=s.clearedAreas||[];
+ state.wood=Math.max(0,Number(s.wood??10)||0);state.food=Math.max(0,Number(s.food??0)||0);state.metal=Math.max(0,Number(s.metal??0)||0);state.starCrystals=Math.max(0,Number(s.starCrystals??s.crystal??0)||0);
+ state.herbs=Math.max(0,Number(s.herbs??0)||0);state.crystal=state.starCrystals;
+ state.progressStep=Math.max(0,Number(s.progressStep??0)||0);state.clearedAreas=Array.isArray(s.clearedAreas)?s.clearedAreas:[];
+ state.events=Array.isArray(s.events)?s.events:[];state.memories=Array.isArray(s.memories)?s.memories:[];
  state.companions=characterDefaults().map(base=>({...base,...((s.companions||[]).find(x=>x.id===base.id)||{})}));
  if(s.companions?.some(x=>x.id==='luna')){const old=s.companions;state.companions=characterDefaults().map((base,i)=>({...base,...(old.find(x=>x.id===base.id)||{}),unlocked:base.id==='mina'?true:(old.find(x=>x.id===base.id)?.unlocked??false)}))}
  state.facilities=facilityDefaults().map(base=>({...base,...((s.facilities||[]).find(x=>x.id===base.id)||{})}));
