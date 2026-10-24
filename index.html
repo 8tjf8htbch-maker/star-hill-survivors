@@ -54,15 +54,23 @@ function normalizeState(s){
  state.flowers=!!s.flowers;state.bridge=!!s.bridge;
  return state;
 }
-function save(){try{state.lastSeen=now();localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch(e){}}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch(e){toast='セーブできませんでした。端末の空き容量を確認してください。';toastUntil=now()+3500}}
 function load(){
  try{
   const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem('starHillSurvivors.save.v1');
-  if(raw){const s=JSON.parse(raw);normalizeState(s);
-   const elapsed=Math.max(0,Math.min(28800,Math.floor((now()-(s.lastPlayedAt||s.lastSeen||now()))/1000)));
+  if(raw){
+   const s=JSON.parse(raw);
+   normalizeState(s);
+   const previousTime=Number(s.lastPlayedAt||s.lastSeen||s.createdAt||now());
+   const elapsed=Math.max(0,Math.min(8*60*60,Math.floor((now()-previousTime)/1000)));
    processOffline(elapsed);
+   state.lastPlayedAt=now();
+   save();
+  }else{
+   state.lastPlayedAt=now();
+   save();
   }
- }catch(e){state=defaultState()}
+ }catch(e){state=defaultState();state.lastPlayedAt=now();save()}
 }
 function processOffline(seconds){
  if(seconds<=60)return;
@@ -95,17 +103,11 @@ const eventTemplates=[
   ['mio','luna','ミオが庭に小さな花壇を作り、ルナが水をあげた。','flower',0],
   ['luna','kai','ルナが「帰ってきたときに灯りが見えるように」とランタンを磨いた。','memory',0]
 ];
-function save(){try{state.lastSeen=now();localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch(e){}}
-function load(){
- try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)return;const s=JSON.parse(raw);state={...defaultState(),...s};state.companions=s.companions||defaultState().companions;state.facilities=s.facilities||defaultState().facilities;
- const elapsed=Math.max(0,Math.min(8*60*60*1000,now()-(s.lastSeen||now())));const ticks=Math.floor(elapsed/(2*60*1000));
- if(ticks>0){state.wood+=ticks;state.herbs+=Math.floor(ticks/2);state.day+=Math.floor(ticks/30);const ev=eventTemplates[(state.events.length+ticks)%eventTemplates.length];addEvent(ev[2],'留守中の出来事');toast='おかえり。留守のあいだに仲間たちが過ごしていたよ。';toastUntil=now()+5000;}
- }catch(e){state=defaultState()}
-}
 function addEvent(text,type='暮らしの記録'){state.events.unshift({text,type,at:now()});state.events=state.events.slice(0,40)}
 function remember(text){if(!state.memories.includes(text))state.memories.unshift(text);state.memories=state.memories.slice(0,30)}
 function resize(){const dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.floor(innerWidth*dpr);canvas.height=Math.floor(innerHeight*dpr);scale=Math.min(canvas.width/W,canvas.height/H);ox=(canvas.width-W*scale)/2;oy=(canvas.height-H*scale)/2;ctx.imageSmoothingEnabled=false}
 addEventListener('resize',resize);resize();load();checkStory();
+addEventListener('pagehide',()=>{state.lastPlayedAt=now();state.lastSeen=state.lastPlayedAt;save()});
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
 function text(s,x,y,size=8,color='#f4e5c4',align='left'){ctx.font=size+'px monospace';ctx.textAlign=align;ctx.textBaseline='top';ctx.fillStyle=color;ctx.fillText(s,x,y)}
 function panel(x,y,w,h){rect(x,y,w,h,'#171a32');rect(x,y,w,1,'#a98d8a');rect(x,y+h-1,w,1,'#5d526b');rect(x,y,1,h,'#8e7d91');rect(x+w-1,y,1,h,'#5d526b')}
