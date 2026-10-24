@@ -88,12 +88,14 @@ function processOffline(seconds){
  const mins=Math.floor(elapsed/60);
  const levels={
   bonfire:state.facilities.find(f=>f.id==='bonfire')?.level||0,
+  lumber_mill:state.facilities.find(f=>f.id==='lumber_mill')?.level||0,
   farm:state.facilities.find(f=>f.id==='farm')?.level||0,
   observatory:state.facilities.find(f=>f.id==='observatory')?.level||0
  };
- // 設計書の「生産速度 × 施設レベル × 経過秒数」に合わせる（現在の生産速度は維持）。
- const productionRate={woodPerSecond:0.05,foodPerSecond:1/120,starCrystalsPerSecond:1/3600};
+ // 各施設の生産量は「生産速度 × 施設レベル × 経過秒数」で計算。
+ const productionRate={woodPerSecond:0.05,lumberMillWoodPerSecond:0.05,foodPerSecond:1/120,starCrystalsPerSecond:1/3600};
  state.wood+=Math.floor(productionRate.woodPerSecond*levels.bonfire*elapsed);
+ state.wood+=Math.floor(productionRate.lumberMillWoodPerSecond*levels.lumber_mill*elapsed);
  state.food+=Math.floor(productionRate.foodPerSecond*levels.farm*elapsed);
  state.starCrystals+=Math.floor(productionRate.starCrystalsPerSecond*levels.observatory*elapsed);
  state.crystal=state.starCrystals;
