@@ -459,7 +459,35 @@ function drawAreaScenery(area){
  }
 }
 function drawExplore(){const area=state.explore?.area||state.currentArea;sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);trees();water();rect(0,203,W,67,'#243d3e');drawPixelDetails();drawAreaScenery(area);for(let i=0;i<30;i++){let x=(i*23+t*12)%W,y=185+(i*13)%68;rect(x,y,2,3,'#6a9b78')}rect(0,213,W,8,'#7b5b55');for(let x=0;x<W;x+=30)rect(x,213,2,8,'#b98b68');character(90,178,'#b6c9da',true,player.dir);text(AREA_NAMES[area]||'忘れられた森',10,10,10,'#fff0c9');text('探索中… 見つけたものを持ち帰ろう',10,24,8,'#e7dded');for(let i=0;i<4;i++){let x=250+i*45,y=185+Math.sin(t*2+i)*3;rect(x,y,7,6,i===2?'#a5d9e6':'#86b58b');rect(x+2,y-2,3,3,'#d9f1b5')}if(state.explore){let remaining=Math.max(0,state.explore.ends-now());text('帰還まで '+Math.ceil(remaining/1000)+'秒',W-10,10,8,'#fff0c9','right')}}
-function drawBattle(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);rect(0,203,W,67,'#293343');rect(0,213,W,8,'#65505a');const b=state.battle;if(!b)return;text('探索戦闘',10,10,10,'#fff0c9');text((AREA_NAMES[b.area]||'探索地')+' ・ '+(b.boss?'ボス戦':'遭遇戦'),10,24,8,'#d7d7ed');text('敵 '+b.enemyName+' '+Math.max(0,b.enemyHp)+'/'+b.enemyMaxHp+' HP',10,43,9,'#ffd4c7');rect(10,51,190,7,'#49313d');rect(10,51,190*Math.max(0,b.enemyHp)/b.enemyMaxHp,7,'#dc727d');text('仲間',10,75,8,'#d7d7ed');(b.party||[]).forEach((p,i)=>{const x=45+i*95;companionSprite(x,132,p.id||'mina',false,true,companionExpression(p.id));text(p.name,x,151,8,'#fff0c9','center');text(Math.max(0,p.hp)+'/'+p.maxHp+' HP',x,163,7,p.hp>0?'#bde2bd':'#d87883','center')});(b.log||[]).slice(-3).forEach((line,i)=>text(line,10,185+i*11,7,'#f0e6dd'));if(b.status==='victory'||b.status==='defeat')text(b.status==='victory'?'勝利！ 報酬を持ち帰ろう':'敗北… 撤退します',W/2,226,9,'#fff0c9','center')}
+function drawEnemySprite(area,boss=false){
+ // Distinct compact pixel-art silhouettes for each region.
+ const bob=Math.round(Math.sin(t*3)*2),x=330,y=118+bob;
+ if(area==='forest_1'){
+  // Moss beast: low body, branch-like ears, glowing eyes
+  rect(x+2,y+18,45,17,'#294e43');rect(x+7,y+10,35,16,'#3b7153');rect(x+12,y+5,24,10,'#527e58');
+  rect(x+10,y+8,6,8,'#527e58');rect(x+31,y+6,6,10,'#527e58');
+  rect(x+15,y+14,5,4,'#f4d78b');rect(x+29,y+14,5,4,'#f4d78b');rect(x+17,y+15,2,3,'#263344');rect(x+31,y+15,2,3,'#263344');
+  rect(x+6,y+31,8,5,'#213b38');rect(x+34,y+31,8,5,'#213b38');
+  for(let i=0;i<4;i++)rect(x+8+i*9,y+3-(i%2)*3,4,3,'#8bb47a');
+  if(boss){rect(x+13,y-4,5,9,'#c9b7e4');rect(x+31,y-5,5,10,'#c9b7e4');rect(x+20,y-8,9,5,'#e6d7f7');}
+ }else if(area==='city_2'){
+  // Ruined guardian: blocky metal body and cyan eye slits
+  rect(x+9,y+8,31,30,'#555f77');rect(x+4,y+14,9,20,'#747f91');rect(x+36,y+14,9,20,'#747f91');
+  rect(x+13,y+3,23,12,'#7e899b');rect(x+17,y+6,15,5,'#253c53');rect(x+19,y+7,4,3,'#8fe3e5');rect(x+27,y+7,4,3,'#8fe3e5');
+  rect(x+15,y+19,19,3,'#343e55');rect(x+17,y+25,15,4,'#8996a5');rect(x+13,y+36,8,5,'#41495f');rect(x+29,y+36,8,5,'#41495f');
+  rect(x+3,y+12,5,4,'#a7bac7');rect(x+39,y+12,5,4,'#a7bac7');
+  if(boss){rect(x+18,y-5,5,9,'#a8e8ee');rect(x+25,y-5,5,9,'#a8e8ee');rect(x+20,y-10,9,4,'#d3faff');}
+ }else{
+  // Crystal sentinel: pale rock armor and luminous crystal crest
+  rect(x+6,y+18,40,18,'#7784a3');rect(x+12,y+8,28,21,'#9aa6c4');rect(x+17,y+1,18,12,'#c4c9e0');
+  rect(x+17,y+14,6,5,'#f4e6ff');rect(x+31,y+14,6,5,'#f4e6ff');rect(x+19,y+15,2,3,'#5c5379');rect(x+33,y+15,2,3,'#5c5379');
+  rect(x+11,y+33,9,5,'#667394');rect(x+33,y+33,9,5,'#667394');
+  rect(x+20,y-7,5,10,'#b6e7f1');rect(x+25,y-11,6,13,'#e6e4ff');rect(x+31,y-5,4,8,'#a7d6ee');
+  if(boss){rect(x+11,y-2,5,11,'#d8d1f4');rect(x+37,y-2,5,11,'#d8d1f4');rect(x+24,y-16,7,7,'#fff0c9');}
+ }
+ if(boss){rect(x+5,y+42,43,3,'#e9c77d');rect(x+10,y+45,33,2,'#b78d70');}
+}
+function drawBattle(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);rect(0,203,W,67,'#293343');rect(0,213,W,8,'#65505a');const b=state.battle;if(!b)return;drawEnemySprite(b.area,b.boss);text('探索戦闘',10,10,10,'#fff0c9');text((AREA_NAMES[b.area]||'探索地')+' ・ '+(b.boss?'ボス戦':'遭遇戦'),10,24,8,'#d7d7ed');text('敵 '+b.enemyName+' '+Math.max(0,b.enemyHp)+'/'+b.enemyMaxHp+' HP',10,43,9,'#ffd4c7');rect(10,51,190,7,'#49313d');rect(10,51,190*Math.max(0,b.enemyHp)/b.enemyMaxHp,7,'#dc727d');text('仲間',10,75,8,'#d7d7ed');(b.party||[]).forEach((p,i)=>{const x=45+i*95;companionSprite(x,132,p.id||'mina',false,true,companionExpression(p.id));text(p.name,x,151,8,'#fff0c9','center');text(Math.max(0,p.hp)+'/'+p.maxHp+' HP',x,163,7,p.hp>0?'#bde2bd':'#d87883','center')});(b.log||[]).slice(-3).forEach((line,i)=>text(line,10,185+i*11,7,'#f0e6dd'));if(b.status==='victory'||b.status==='defeat')text(b.status==='victory'?'勝利！ 報酬を持ち帰ろう':'敗北… 撤退します',W/2,226,9,'#fff0c9','center')}
 function button(x,y,w,h,label,id){panel(x,y,w,h);text(label,x+w/2,y+Math.floor((h-8)/2),8,'#f4e5c4','center')}
 function drawControls(){if(state.mode==='base'){button(8,232,91,28,'仲間・編成','party');button(105,232,91,28,'探索に出る','explore');button(202,232,91,28,'施設を育てる','build');button(299,232,82,28,'暮らしの日誌','journal');button(387,232,85,28,'思い出 '+state.memories.length,'memory');}else if(state.mode==='explore'){button(8,232,104,28,'基地へ帰る','return');button(370,232,102,28,'探索を続ける','continue')}else{button(8,232,85,28,'基地へ戻る','home')}}
 function wrapDialogLine(value,maxWidth,size=8){
