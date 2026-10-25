@@ -315,6 +315,44 @@ function drawCompanionActivities(){
   }
  }
 }
+function drawPixelDetails(){
+ const phase=getTimeOfDay();
+ // Grass tufts and tiny flowers across the island floor
+ for(let i=0;i<34;i++){
+  const x=(i*41+13)%W,y=191+(i*11)%10;
+  if(i%5===0){
+   rect(x,y,2,4,'#477957');rect(x-2,y-2,2,2,i%2?'#e9a8c8':'#e8d58a');rect(x+2,y-1,2,2,'#f4d7a0');
+  }else{
+   rect(x,y,2,3,i%3===0?'#75a56e':'#477957');rect(x+2,y+1,2,2,'#2f5a49');
+  }
+ }
+ // Pixel mushrooms near the trees
+ for(let i=0;i<5;i++){
+  const x=18+i*91,y=177+(i%2)*5;
+  rect(x+2,y+4,3,5,'#e5d2a2');rect(x,y+1,7,3,i%2?'#cf777b':'#d7a06c');
+  rect(x+1,y,2,2,'#f3c2a3');rect(x+4,y+1,2,1,'#fff0c9');
+ }
+ // Stone clusters around paths and water's edge
+ for(let i=0;i<7;i++){
+  const x=(i*67+24)%W,y=193+(i%3)*3;
+  rect(x,y,5,3,'#687184');rect(x+1,y-2,3,2,'#8b94a4');rect(x+2,y+1,2,1,'#424c61');
+ }
+ // Tiny glowing fireflies at night/evening
+ if(phase==='night'||phase==='evening'){
+  for(let i=0;i<9;i++){
+   const x=(i*53+Math.floor(t*2+i*7))%W,y=130+(i*17)%61;
+   rect(x,y,2,2,Math.sin(t*2+i)>.1?'#f5df91':'#8cae9a');
+   if(i%3===0)rect(x-1,y,4,1,'#b7c9a0');
+  }
+ }
+ // Fire sparks only when a bonfire has been built
+ if((state.facilities||[]).some(f=>f.id==='bonfire'&&f.level>0)){
+  for(let i=0;i<7;i++){
+   const rise=(t*12+i*9)%22,x=238+Math.sin(t*1.4+i)*5+i%3*3,y=181-rise;
+   rect(Math.round(x),Math.round(y),2,2,i%2?'#ffbd62':'#ffe8a0');
+  }
+ }
+}
 function drawFacilityDecorations(){
  const level=id=>state.facilities.find(f=>f.id===id)?.level||0;
  // 焚き火：建設すると拠点中央に炎と石囲いが現れる
@@ -341,7 +379,7 @@ function drawFacilityDecorations(){
  // 小屋：未建設時は出さず、建設後に自分の居住小屋として現れる
  if(level('hut')>0){cabin(174,132,0.72);text('小屋 Lv.'+level('hut'),203,171,6,'#fff0c9','center')}
 }
-function drawBase(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);trees();water();cabin(34,133,.8);cabin(365,141,.7);wheel(390,172);deck();drawFacilityDecorations();if(state.lamps){for(let i=0;i<4;i++)lamp(105+i*82,187)}if(state.flowers){for(let i=0;i<9;i++){let x=28+i*49;rect(x,198,2,4,'#5d9b70');rect(x-2,197,3,3,i%2?'#efb2d0':'#e9d58a')}}if(state.bridge){rect(0,199,W,3,'#d6b58a');for(let x=10;x<W;x+=35)rect(x,195,3,5,'#e5c39b')}
+function drawBase(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);trees();water();cabin(34,133,.8);cabin(365,141,.7);wheel(390,172);deck();drawPixelDetails();drawFacilityDecorations();if(state.lamps){for(let i=0;i<4;i++)lamp(105+i*82,187)}if(state.flowers){for(let i=0;i<9;i++){let x=28+i*49;rect(x,198,2,4,'#5d9b70');rect(x-2,197,3,3,i%2?'#efb2d0':'#e9d58a')}}if(state.bridge){rect(0,199,W,3,'#d6b58a');for(let x=10;x<W;x+=35)rect(x,195,3,5,'#e5c39b')}
  // 仲間は建設済み施設の近くで、それぞれの暮らしを見せる
  drawCompanionActivities();
  character(player.x,170,'#b6c9da',player.walking,player.dir);
@@ -354,7 +392,7 @@ function drawBase(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);tr
 }
 const AREA_NAMES={forest_1:'忘れられた森',city_2:'沈んだ旧市街',highland_3:'星降りの高原'};
 const AREA_ORDER=['forest_1','city_2','highland_3'];
-function drawExplore(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);trees();water();rect(0,203,W,67,'#243d3e');for(let i=0;i<30;i++){let x=(i*23+t*12)%W,y=185+(i*13)%68;rect(x,y,2,3,'#6a9b78')}rect(0,213,W,8,'#7b5b55');for(let x=0;x<W;x+=30)rect(x,213,2,8,'#b98b68');character(90,178,'#b6c9da',true,player.dir);const area=state.explore?.area||state.currentArea;text(AREA_NAMES[area]||'忘れられた森',10,10,10,'#fff0c9');text('探索中… 見つけたものを持ち帰ろう',10,24,8,'#e7dded');for(let i=0;i<4;i++){let x=250+i*45,y=185+Math.sin(t*2+i)*3;rect(x,y,7,6,i===2?'#a5d9e6':'#86b58b');rect(x+2,y-2,3,3,'#d9f1b5')}if(state.explore){let remaining=Math.max(0,state.explore.ends-now());text('帰還まで '+Math.ceil(remaining/1000)+'秒',W-10,10,8,'#fff0c9','right')}}
+function drawExplore(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);trees();water();rect(0,203,W,67,'#243d3e');drawPixelDetails();for(let i=0;i<30;i++){let x=(i*23+t*12)%W,y=185+(i*13)%68;rect(x,y,2,3,'#6a9b78')}rect(0,213,W,8,'#7b5b55');for(let x=0;x<W;x+=30)rect(x,213,2,8,'#b98b68');character(90,178,'#b6c9da',true,player.dir);const area=state.explore?.area||state.currentArea;text(AREA_NAMES[area]||'忘れられた森',10,10,10,'#fff0c9');text('探索中… 見つけたものを持ち帰ろう',10,24,8,'#e7dded');for(let i=0;i<4;i++){let x=250+i*45,y=185+Math.sin(t*2+i)*3;rect(x,y,7,6,i===2?'#a5d9e6':'#86b58b');rect(x+2,y-2,3,3,'#d9f1b5')}if(state.explore){let remaining=Math.max(0,state.explore.ends-now());text('帰還まで '+Math.ceil(remaining/1000)+'秒',W-10,10,8,'#fff0c9','right')}}
 function drawBattle(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);rect(0,203,W,67,'#293343');rect(0,213,W,8,'#65505a');const b=state.battle;if(!b)return;text('探索戦闘',10,10,10,'#fff0c9');text((AREA_NAMES[b.area]||'探索地')+' ・ '+(b.boss?'ボス戦':'遭遇戦'),10,24,8,'#d7d7ed');text('敵 '+b.enemyName+' '+Math.max(0,b.enemyHp)+'/'+b.enemyMaxHp+' HP',10,43,9,'#ffd4c7');rect(10,51,190,7,'#49313d');rect(10,51,190*Math.max(0,b.enemyHp)/b.enemyMaxHp,7,'#dc727d');text('仲間',10,75,8,'#d7d7ed');(b.party||[]).forEach((p,i)=>{const x=45+i*95;companionSprite(x,132,p.id||'mina',false,true,companionExpression(p.id));text(p.name,x,151,8,'#fff0c9','center');text(Math.max(0,p.hp)+'/'+p.maxHp+' HP',x,163,7,p.hp>0?'#bde2bd':'#d87883','center')});(b.log||[]).slice(-3).forEach((line,i)=>text(line,10,185+i*11,7,'#f0e6dd'));if(b.status==='victory'||b.status==='defeat')text(b.status==='victory'?'勝利！ 報酬を持ち帰ろう':'敗北… 撤退します',W/2,226,9,'#fff0c9','center')}
 function button(x,y,w,h,label,id){panel(x,y,w,h);text(label,x+w/2,y+Math.floor((h-8)/2),8,'#f4e5c4','center')}
 function drawControls(){if(state.mode==='base'){button(8,232,91,28,'仲間・編成','party');button(105,232,91,28,'探索に出る','explore');button(202,232,91,28,'施設を育てる','build');button(299,232,82,28,'暮らしの日誌','journal');button(387,232,85,28,'思い出 '+state.memories.length,'memory');}else if(state.mode==='explore'){button(8,232,104,28,'基地へ帰る','return');button(370,232,102,28,'探索を続ける','continue')}else{button(8,232,85,28,'基地へ戻る','home')}}
