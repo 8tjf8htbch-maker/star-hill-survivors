@@ -181,6 +181,31 @@ function cabin(x,y,scale=1){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale)
 function wheel(x,y){ctx.strokeStyle='#ad8064';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.stroke();for(let i=0;i<8;i++){const a=i*Math.PI/4+t*.22;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a)*14,y+Math.sin(a)*14);ctx.stroke()}rect(x-3,y-3,6,6,'#d4a16d')}
 function deck(){rect(0,202,W,6,'#d2a179');rect(0,208,W,19,'#805951');rect(0,227,W,3,'#4c3e4b');for(let x=0;x<W;x+=24){rect(x,203,1,22,'#513d49');rect(x+3,212,2,1,'#e4b382')}for(let x=14;x<W;x+=80){rect(x,228,4,32,'#493b49');rect(x-2,227,8,3,'#b98b68')}for(let x=50;x<W;x+=145)lamp(x,196)}
 function character(x,y,color='#82b5c6',walking=false,dir=1){rect(x+5,y+29,22,3,'#11172b');if(spriteReady&&sprite.naturalWidth>=32&&sprite.naturalHeight>=32){let f=walking?Math.floor(t*FRAME_RATE)%(Math.min(FRAME_COUNT,Math.floor(sprite.naturalWidth/32))):0;ctx.save();if(dir<0){ctx.translate(x+32,y);ctx.scale(-1,1);ctx.drawImage(sprite,f*32,0,32,32,0,0,32,32)}else ctx.drawImage(sprite,f*32,0,32,32,x,y,32,32);ctx.restore();return}rect(x+10,y+3,12,3,'#30243e');rect(x+7,y+6,18,8,'#30243e');rect(x+9,y+8,14,7,'#efbd91');rect(x+7,y+5,18,4,'#4c3650');rect(x+8,y+13,16,3,'#b47a68');rect(x+8,y+16,16,10,color);let step=walking?Math.sin(t*FRAME_RATE*Math.PI)*2:0;rect(x+5,y+17+step,4,8,color);rect(x+23,y+17-step,4,8,color);rect(x+10,y+26+step,5,Math.max(2,5-step),'#3d334b');rect(x+18,y+26-step,5,Math.max(2,5+step),'#3d334b');rect(x+11,y+9,2,2,'#29243a');rect(x+20,y+9,2,2,'#29243a')}
+function companionSprite(x,y,id,dim=false,walking=false){
+ const palettes={
+  mina:{hair:'#68404a',hair2:'#a56a66',skin:'#f1c49b',coat:'#d986b2',coat2:'#a94f83',trim:'#ffe0b7',boots:'#49364b',accent:'#f5c66b'},
+  joe:{hair:'#273754',hair2:'#4c7095',skin:'#e9b58c',coat:'#4f9ca9',coat2:'#286b7b',trim:'#f4e4c5',boots:'#3c3d56',accent:'#f0d8a2'},
+  sera:{hair:'#24483f',hair2:'#4f8765',skin:'#f0c7a1',coat:'#789e80',coat2:'#3d655b',trim:'#c9e9c5',boots:'#303b54',accent:'#f7dc87'}
+ };
+ const p=palettes[id]||palettes.mina,muted=dim?'#55566b':null;
+ const c=v=>muted||v,step=walking?Math.sin(t*FRAME_RATE*Math.PI)*1.5:0;
+ rect(x+5,y+29,22,3,'#11172b');
+ rect(x+10,y+24+step,5,5-step,p.boots);rect(x+18,y+24-step,5,5+step,p.boots);
+ rect(x+9,y+28+step,7,2,'#25283f');rect(x+17,y+28-step,7,2,'#25283f');
+ rect(x+8,y+15,16,11,c(p.coat));rect(x+6,y+17,4,8,c(p.coat2));rect(x+22,y+17,4,8,c(p.coat2));
+ rect(x+10,y+16,12,2,c(p.trim));rect(x+14,y+17,4,8,c(p.coat2));
+ rect(x+8,y+5,16,11,c(p.hair));rect(x+10,y+7,12,9,c(p.skin));
+ rect(x+7,y+5,18,5,c(p.hair));rect(x+8,y+8,3,7,c(p.hair));rect(x+21,y+8,3,6,c(p.hair));
+ rect(x+11,y+10,2,2,dim?'#777':'#29243a');rect(x+19,y+10,2,2,dim?'#777':'#29243a');
+ rect(x+14,y+13,4,1,dim?'#777':'#a45e64');
+ if(id==='mina'){
+  rect(x+6,y+7,4,7,c(p.hair2));rect(x+20,y+4,4,2,c(p.accent));rect(x+10,y+19,3,5,c(p.trim));rect(x+19,y+20,4,3,c(p.accent));rect(x+14,y+15,4,2,c(p.trim));
+ }else if(id==='joe'){
+  rect(x+7,y+3,5,4,c(p.hair2));rect(x+13,y+2,5,3,c(p.hair));rect(x+11,y+15,10,3,c(p.trim));rect(x+20,y+19,4,4,c(p.accent));rect(x+14,y+20,4,2,c(p.trim));
+ }else if(id==='sera'){
+  rect(x+6,y+7,4,12,c(p.hair));rect(x+22,y+7,4,12,c(p.hair));rect(x+20,y+4,3,3,c(p.accent));rect(x+14,y+18,4,2,c(p.trim));rect(x+10,y+20,3,3,c(p.accent));
+ }
+}
 function getFacilityLevel(id){const f=Array.isArray(state.facilities)?state.facilities.find(item=>item.id===id):state.facilities?.[id];return Number(f?.level)||0;}
 function drawCompanionActivities(){
  const phase=getTimeOfDay();
@@ -203,7 +228,7 @@ function drawCompanionActivities(){
    x=220+i*13+Math.sin(t*.25+i)*2;y=172;activity='焚き火のそばで休んでいる';
    if(getFacilityLevel('bonfire')===0){x=160+i*35;y=171;activity='小屋で休んでいる';}
   }
-  character(x,y,c.color||'#d9a2c8',false,1);
+  companionSprite(x,y,c.id,false,false);
   text(c.name,x+8,y-7,7,'#fff0c9','center');
   if(Math.sin(t*1.1+i*2)>.985){panel(x-20,y-23,64,12,'#25213bdc');text(activity,x+12,y-15,6,'#fff0c9','center');}
  });
@@ -306,7 +331,7 @@ function drawDialog(){
    const col=i%3,row=Math.floor(i/3),x=30+col*140,y=56+row*77,active=selected.includes(c.id),available=!!c.unlocked;
    panel(x,y,132,70);
    if(active){rect(x+1,y+1,130,2,'#a9d99a');rect(x+1,y+67,130,2,'#a9d99a')}
-   character(x+7,y+13,available?(c.color||'#b6c9da'):'#55566b',false,1);
+   companionSprite(x+7,y+13,c.id,!available,false);
    text(c.name,x+45,y+8,9,active?'#bde2bd':available?'#fff0c9':'#85859a');
    text(available?'Lv.'+(c.level||1):'未加入',x+45,y+22,8,'#d7d7ed');
    text(c.role||'仲間',x+45,y+35,6,'#d7d7ed');
