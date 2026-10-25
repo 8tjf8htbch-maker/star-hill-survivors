@@ -157,9 +157,19 @@ function sky(){
   evening:['#211f45','#66436a','#bd6d79','#d99a81'],
   night:['#10152e','#272447','#604563','#98687b']
  };
- const colors=palettes[phase],g=ctx.createLinearGradient(0,0,0,H);
- g.addColorStop(0,colors[0]);g.addColorStop(.45,colors[1]);g.addColorStop(.78,colors[2]);g.addColorStop(1,colors[3]);
- ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ const colors=palettes[phase];
+ // グラデーションを使わず、横帯と小さな色ブロックでレトロRPG風の空にする
+ const bands=14;
+ for(let i=0;i<bands;i++){
+  const k=i/(bands-1),idx=Math.min(3,Math.floor(k*3)),blend=(k*3)-idx;
+  const hexA=colors[idx],hexB=colors[Math.min(3,idx+1)];
+  const rgbA=[1,3,5].map(n=>parseInt(hexA.slice(n,n+2),16));
+  const rgbB=[1,3,5].map(n=>parseInt(hexB.slice(n,n+2),16));
+  const mix='#'+rgbA.map((v,j)=>Math.round(v+(rgbB[j]-v)*blend).toString(16).padStart(2,'0')).join('');
+  rect(0,Math.floor(i*H/bands),W,Math.ceil(H/bands)+1,mix);
+ }
+ // 遠景にドット状の霞と空の粒子
+ for(let i=0;i<28;i++){const x=(i*61+17)%W,y=38+(i*19)%108;if(i%3!==0)rect(x,y,2,2,phase==='night'?'#454366':'#c5b6c2');}
  if(phase==='night'||phase==='evening'){
   stars.forEach(s=>{if(phase==='night'||s.y<65)rect(s.x,s.y,s.s, s.s,Math.sin(t*2+s.p)>.6?'#fff0bf':'#c1c9e9')});
  }else{
@@ -173,9 +183,34 @@ function sky(){
   rect(sunX,sunY,12,12,'#f6d7a0');rect(sunX-4,sunY+4,20,4,'#f6d7a0');rect(sunX+4,sunY-4,4,20,'#f6d7a0');
  }
 }
-function ridge(base,color,step,seed){ctx.fillStyle=color;for(let x=-step;x<W+step;x+=step){const h=18+Math.abs(Math.sin(x*.027+seed))*35;ctx.beginPath();ctx.moveTo(x,base);ctx.lineTo(x+step*.48,base-h);ctx.lineTo(x+step,base);ctx.closePath();ctx.fill()}}
-function trees(){for(let i=0;i<19;i++){let x=i*29+Math.sin(i*8)*7,y=157+Math.sin(i*5)*7,sway=Math.sin(t*1.2+i*1.7)*1.5;rect(x+6+sway,y,4,29,'#142c35');ctx.fillStyle='#19373c';ctx.beginPath();ctx.moveTo(x+8+sway,y-24);ctx.lineTo(x-5+sway,y+8);ctx.lineTo(x+21+sway,y+8);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(x+8+sway,y-12);ctx.lineTo(x-7+sway,y+18);ctx.lineTo(x+23+sway,y+18);ctx.closePath();ctx.fill()}}
-function water(){rect(0,184,W,86,'#192f48');for(let i=0;i<45;i++){let x=(i*37+t*5)%W,y=190+(i*17)%72;rect(x,y,8+(i%4)*3,1,Math.sin(t*1.4+i)>.2?'#52617c':'#344d6b')}}
+function ridge(base,color,step,seed){
+ for(let x=-step;x<W+step;x+=step){
+  const h=18+Math.abs(Math.sin(x*.027+seed))*35,peak=Math.round(x+step*.48),left=Math.round(x),right=Math.round(x+step);
+  // 三角形ではなく階段状の輪郭にしてピクセルの山並みにする
+  for(let row=0;row<h;row+=4){
+   const inset=Math.floor((row/h)*(step*.48)/4)*4;
+   rect(left+inset,base-h+row,Math.max(4,right-left-inset*2),4,color);
+  }
+  rect(left,base-h+Math.floor(h*.58/4)*4,Math.max(4,right-left),4,color);
+ }
+}
+function trees(){
+ for(let i=0;i<19;i++){
+  const x=Math.round(i*29+Math.sin(i*8)*7),y=Math.round(157+Math.sin(i*5)*7),sway=Math.round(Math.sin(t*.8+i*1.7));
+  rect(x+6+sway,y,4,29,'#142c35');
+  rect(x+4+sway,y-16,8,8,'#19373c');rect(x+sway,y-8,16,8,'#19373c');rect(x-4+sway,y,24,8,'#19373c');
+  rect(x+4+sway,y-12,8,4,'#2b5550');rect(x+sway,y-4,8,4,'#2b5550');rect(x+12+sway,y,8,4,'#2b5550');
+  rect(x+4+sway,y+5,4,4,'#355b4b');
+ }
+}
+function water(){
+ rect(0,184,W,86,'#192f48');
+ for(let i=0;i<45;i++){
+  const x=Math.floor((i*37+t*5)%W),y=190+(i*17)%72,w=8+(i%4)*3;
+  rect(x,y,w,2,Math.sin(t*1.4+i)>.2?'#52617c':'#344d6b');
+  if(i%4===0)rect(x+3,y+3,Math.max(3,w-7),1,'#71839a');
+ }
+}
 function lamp(x,y){let f=.8+.18*Math.sin(t*3+x);ctx.globalAlpha=.1*f;ctx.fillStyle='#ffc36e';ctx.beginPath();ctx.arc(x,y,13+f*4,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;rect(x-1,y,2,12,'#4b3b49');rect(x-4,y-7,8,8,'#e98b43');rect(x-2,y-5,4,4,'#fff0a2')}
 function cabin(x,y,scale=1){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);rect(0,32,80,3,'#9e6b65');rect(8,12,64,22,'#825b69');rect(4,9,72,5,'#4a405b');rect(13,3,54,8,'#5d4568');rect(19,16,12,11,'#f5b35e');rect(21,18,8,7,'#fff0a2');rect(48,16,12,11,'#f5b35e');rect(50,18,8,7,'#fff0a2');rect(36,22,8,12,'#49354b');rect(10,34,3,20,'#563d48');rect(67,34,3,20,'#563d48');ctx.restore()}
 function wheel(x,y){ctx.strokeStyle='#ad8064';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.stroke();for(let i=0;i<8;i++){const a=i*Math.PI/4+t*.22;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a)*14,y+Math.sin(a)*14);ctx.stroke()}rect(x-3,y-3,6,6,'#d4a16d')}
