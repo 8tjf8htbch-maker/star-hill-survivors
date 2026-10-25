@@ -355,29 +355,59 @@ function drawPixelDetails(){
 }
 function drawFacilityDecorations(){
  const level=id=>state.facilities.find(f=>f.id===id)?.level||0;
- // 焚き火：建設すると拠点中央に炎と石囲いが現れる
- if(level('bonfire')>0){
-  rect(226,187,28,10,'#5a4650');rect(230,184,5,6,'#9a8a88');rect(245,184,5,6,'#9a8a88');
-  rect(235,181,8,9,'#e97c43');rect(237,177,4,8,'#ffd16b');rect(238,180,2,5,'#fff0a2');
-  text('焚き火 Lv.'+level('bonfire'),240,199,6,'#fff0c9','center');
- }
- // 農園：作物の列が施設レベルに応じて増える
- if(level('farm')>0){
-  rect(20,177,57,19,'#58464a');rect(22,179,53,15,'#70534c');
-  for(let row=0;row<Math.min(3,level('farm')+1);row++){
-   for(let col=0;col<5;col++){const x=26+col*9,y=181+row*4;rect(x,y,2,3,'#5b9b68');rect(x+2,y-1,2,3,(row+col)%2?'#9fca79':'#d7d88b')}
+ const phase=getTimeOfDay();
+ // 焚き火：レベルが上がるほど石囲いと炎が大きくなり、夜は周囲に暖色の光を置く
+ const fire=level('bonfire');
+ if(fire>0){
+  rect(219,189,42,8,'#493b49');rect(223,185,34,7,'#66505a');
+  for(let i=0;i<8;i++){const x=221+i*5;rect(x,186+(i%2)*2,4,3,(i+fire)%3===0?'#a6a1a0':'#85818c')}
+  rect(229,184,25,5,'#9a8a88');rect(234,181,15,7,'#e97c43');
+  rect(237,177-Math.min(3,fire),9,9+Math.min(3,fire),'#ffad50');
+  rect(239,176-Math.min(3,fire),4,8+Math.min(3,fire),'#ffd16b');rect(240,179,2,5,'#fff0a2');
+  if(phase==='night'||phase==='evening'){
+   for(let i=0;i<Math.min(5,fire+1);i++){rect(214+i*10,181-(i%2)*3,3,2,'#d99a68');}
   }
-  text('農園 Lv.'+level('farm'),48,198,6,'#fff0c9','center');
+  text('焚き火 Lv.'+fire,240,199,6,'#fff0c9','center');
  }
- // 製材所：木材の山と作業台を表示
- if(level('lumber_mill')>0){
-  rect(397,180,42,14,'#604653');rect(400,177,35,4,'#b9825d');
-  for(let i=0;i<Math.min(4,level('lumber_mill')+1);i++){rect(401+i*8,172,7,5,'#b9825d');rect(402+i*8,173,5,3,'#e0b17a')}
-  rect(409,184,18,8,'#8c624d');rect(411,186,14,2,'#d5a16e');
-  text('製材所 Lv.'+level('lumber_mill'),418,198,6,'#fff0c9','center');
+ // 農園：レベルに応じて畝・作物・収穫かごが増える
+ const farm=level('farm');
+ if(farm>0){
+  rect(17,177,63,19,'#493b49');rect(20,179,57,15,'#70534c');
+  for(let row=0;row<Math.min(4,farm+1);row++){
+   rect(22,181+row*3,53,2,'#594044');
+   for(let col=0;col<5;col++){
+    const x=25+col*10,y=180+row*3;
+    rect(x,y,2,3,'#477957');rect(x+2,y-1,3,3,(row+col+farm)%2?'#9fca79':'#d7d88b');
+    if(farm>=3){rect(x+1,y-3,2,2,'#e8a5b7')}
+   }
+  }
+  if(farm>=2){rect(67,185,7,6,'#b9825d');rect(68,184,5,2,'#d8b07c');rect(69,187,2,2,'#e9d58a')}
+  text('農園 Lv.'+farm,48,198,6,'#fff0c9','center');
  }
- // 小屋：未建設時は出さず、建設後に自分の居住小屋として現れる
- if(level('hut')>0){cabin(174,132,0.72);text('小屋 Lv.'+level('hut'),203,171,6,'#fff0c9','center')}
+ // 製材所：レベルごとに木材の束と作業台を増やす
+ const mill=level('lumber_mill');
+ if(mill>0){
+  rect(394,181,47,13,'#493b49');rect(398,178,39,4,'#b9825d');
+  for(let i=0;i<Math.min(6,mill+1);i++){
+   const x=398+(i%4)*9,y=173+Math.floor(i/4)*5;
+   rect(x,y,8,5,'#8c624d');rect(x+1,y+1,6,2,'#d5a16e');rect(x+2,y+3,4,1,'#604653');
+  }
+  rect(409,186,19,6,'#8c624d');rect(411,187,15,2,'#d5a16e');
+  if(mill>=2){rect(431,175,5,10,'#d7b17d');rect(433,173,2,3,'#e7d6a6')}
+  text('製材所 Lv.'+mill,418,198,6,'#fff0c9','center');
+ }
+ // 小屋：レベルアップで屋根・窓・入口の灯りを追加
+ const hut=level('hut');
+ if(hut>0){
+  cabin(174,132,0.72);
+  if(hut>=2){rect(190,143,8,3,'#7c5c7b');rect(192,144,4,1,'#f5d38a')}
+  if(hut>=3){rect(178,133,53,3,'#d1a06f');rect(200,150,5,8,'#f5b35e')}
+  text('小屋 Lv.'+hut,203,171,6,'#fff0c9','center');
+ }
+ // 小道が少しずつ整備されていく
+ if(fire>=2||hut>=2||mill>=2){
+  for(let i=0;i<8;i++){rect(244+i*7,201+(i%2),5,2,i%2?'#b99a7c':'#8c796d')}
+ }
 }
 function drawBase(){sky();ridge(151,'#24243f',65,1);ridge(171,'#222b43',58,4);trees();water();cabin(34,133,.8);cabin(365,141,.7);wheel(390,172);deck();drawPixelDetails();drawFacilityDecorations();if(state.lamps){for(let i=0;i<4;i++)lamp(105+i*82,187)}if(state.flowers){for(let i=0;i<9;i++){let x=28+i*49;rect(x,198,2,4,'#5d9b70');rect(x-2,197,3,3,i%2?'#efb2d0':'#e9d58a')}}if(state.bridge){rect(0,199,W,3,'#d6b58a');for(let x=10;x<W;x+=35)rect(x,195,3,5,'#e5c39b')}
  // 仲間は建設済み施設の近くで、それぞれの暮らしを見せる
