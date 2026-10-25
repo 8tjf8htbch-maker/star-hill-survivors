@@ -51,7 +51,7 @@ const characterDefaults=()=>[
 const defaultState=()=>({
  mode:'base',wood:10,food:0,metal:0,starCrystals:0,herbs:0,crystal:0,level:0,lamps:false,flowers:false,bridge:false,
  lastSeen:now(),createdAt:now(),day:1,progressStep:0,explore:null,currentArea:'forest_1',clearedAreas:[],playerX:72,
- events:[],memories:[],talkedToday:false,photos:[],letters:[],recipes:[],
+ events:[],memories:[],pairEvents:[],talkedToday:false,photos:[],letters:[],recipes:[],
  companions:characterDefaults(),facilities:facilityDefaults()
 });
 let state=defaultState(),toast='',toastUntil=0,dialog=null,player={x:72,dir:1,walking:false};
@@ -60,7 +60,7 @@ function normalizeState(s){
  state.wood=Math.max(0,Number(s.wood??10)||0);state.food=Math.max(0,Number(s.food??0)||0);state.metal=Math.max(0,Number(s.metal??0)||0);state.starCrystals=Math.max(0,Number(s.starCrystals??s.crystal??0)||0);
  state.herbs=Math.max(0,Number(s.herbs??0)||0);state.crystal=state.starCrystals;
  state.progressStep=Math.max(0,Number(s.progressStep??0)||0);state.clearedAreas=Array.isArray(s.clearedAreas)?s.clearedAreas:[];
- state.events=Array.isArray(s.events)?s.events:[];state.memories=Array.isArray(s.memories)?s.memories:[];
+ state.events=Array.isArray(s.events)?s.events:[];state.memories=Array.isArray(s.memories)?s.memories:[];state.pairEvents=Array.isArray(s.pairEvents)?s.pairEvents:[];
  state.companions=characterDefaults().map(base=>({...base,...((s.companions||[]).find(x=>x.id===base.id)||{})}));
  if(s.companions?.some(x=>x.id==='luna')){const old=s.companions;state.companions=characterDefaults().map((base,i)=>({...base,...(old.find(x=>x.id===base.id)||{}),unlocked:base.id==='mina'?true:(old.find(x=>x.id===base.id)?.unlocked??false)}))}
  state.facilities=facilityDefaults().map(base=>({...base,...((s.facilities||[]).find(x=>x.id===base.id)||{})}));
@@ -310,6 +310,14 @@ function talk(){
  const affinity=Math.max(1,Number(c.affinity)||1);
  const closeness=affinity>=5?'かけがえのない親友':affinity>=3?'心を許せる親友':affinity>=2?'親しい仲間':'仲間';
  const result=[line,'なかよし度 '+affinity+'　（'+closeness+'）'];
+ const pairScenes={
+  'mina-joe':{title:'ハーブスープの隠し味',lines:['ミナが育てたハーブを、ジョーがスープにひとつまみ。','「この香り、丘の風みたいだね」と二人は笑った。']},
+  'mina-sera':{title:'星空のベンチ',lines:['夜の観測中、ミナが温かいお茶を持ってきた。','二人は観測台のそばで、静かに星を見上げた。']},
+  'joe-sera':{title:'古い道具の話',lines:['工房で見つけた古い道具を、ジョーがセラに見せた。','道具の歴史を語り合ううち、夜が更けていった。']}
+ };
+ const partner=(state.companions||[]).find(x=>x.id!==c.id&&x.unlocked&&Number(x.affinity||1)>=2);
+ if(affinity>=2&&partner){const pair=[c.id,partner.id].sort().join('-'),scene=pairScenes[pair];if(scene&&!state.pairEvents.includes(pair)){state.pairEvents.push(pair);result.push('');result.push('【思い出イベント：'+scene.title+'】',...scene.lines);addEvent(scene.title+'：'+scene.lines.join(''),'仲間の思い出');remember(scene.title+'を見届けた');}}
+
  if(bondUp)result.push('✦ '+c.name+'との思い出が日誌に刻まれた。');
  else if(affinity>=3)result.push('二人だけの思い出が、少しずつ増えていく。');
  else result.push('何度も話すと、もっと特別な会話が聞けるかも。');
