@@ -71,7 +71,7 @@ function normalizeState(s){
  state.flowers=!!s.flowers;state.bridge=!!s.bridge;
  return state;
 }
-function save(){try{state.playerX=Number.isFinite(player.x)?player.x:(Number(state.playerX)||72);localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch(e){toast='セーブできませんでした。端末の空き容量を確認してください。';toastUntil=now()+3500}}
+function save(){try{state.playerX=Number.isFinite(player.x)?player.x:(Number(state.playerX)||72);state.lastPlayedAt=now();localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch(e){toast='セーブできませんでした。端末の空き容量を確認してください。';toastUntil=now()+3500}}
 function load(){
  try{
   const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem('starHillSurvivors.save.v1');
